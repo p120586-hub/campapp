@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampApp — Administración</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --cream:#FAF6EC; --paper:#FFFFFF; --forest:#1F4436; --forest-dk:#153029;
+  --amber:#D99A2B; --amber-dk:#B87F1B; --ember:#C4562E; --sage:#B9C9B6; --sage-dk:#7C9885;
+  --ink:#22271F; --ink-soft:#5B6259; --line:#E3DDCB; --ok:#3E7D5A; --radius:14px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;background:var(--cream);color:var(--ink);font-family:'Work Sans',sans-serif;color-scheme:light;}
+body{background:var(--cream) !important;}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;margin:0;color:var(--forest-dk);}
+.mono{font-family:'JetBrains Mono',monospace;}
+button{font-family:'Work Sans',sans-serif;cursor:pointer;}
+input,select{font-family:'Work Sans',sans-serif;}
+
+/* LOGIN GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dk) 65%);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;}
+.gate-card{background:#fff;border-radius:16px;padding:30px 26px;max-width:340px;width:100%;text-align:center;}
+.gate-card h1{font-size:24px;margin-bottom:6px;}
+.gate-card p{font-size:13px;color:var(--ink-soft);margin-bottom:18px;}
+.gate-card input{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:15px;text-align:center;margin-bottom:12px;}
+.gate-card button{width:100%;background:var(--forest);color:#fff;border:none;padding:12px;border-radius:9px;font-weight:600;font-size:14.5px;}
+.gate-err{color:var(--ember);font-size:12.5px;margin-top:8px;display:none;}
+
+.camp-card{background:#fff;border-radius:14px;padding:18px 16px;margin-bottom:12px;text-align:left;width:100%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.camp-card:hover{background:var(--cream);}
+.camp-card .cc-name{font-family:'Fraunces',serif;font-weight:700;font-size:17px;color:var(--forest-dk);}
+.camp-card .cc-arrow{font-size:20px;color:var(--amber-dk);}
+
+.hero{background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dk) 65%);color:#fff;padding:24px 20px 18px;position:relative;overflow:hidden;}
+.hero::after{content:"";position:absolute;right:-40px;bottom:-60px;width:220px;height:220px;background:radial-gradient(circle,var(--amber) 0%, transparent 70%);opacity:.35;}
+.hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;}
+.hero-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:4px;}
+.hero h1{color:#fff;font-size:28px;letter-spacing:-.01em;}
+.sync-status{font-size:12px;color:#D9E4DB;}
+.sync-status.err{color:#F5C6B8;}
+.btn-refresh{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;}
+
+.tabs{display:flex;gap:4px;max-width:1100px;margin:0 auto;padding:0 20px;overflow-x:auto;background:var(--forest-dk);}
+.tab-btn{background:transparent;border:none;color:#B9CDBE;padding:14px 14px;font-size:13.5px;font-weight:600;white-space:nowrap;border-bottom:3px solid transparent;}
+.tab-btn.active{color:#fff;border-bottom-color:var(--amber);}
+.tab-btn:hover{color:#fff;}
+
+.wrap{max-width:1100px;margin:0 auto;padding:22px 16px 60px;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+.card h2{font-size:19px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px;border-left:4px solid var(--sage-dk);}
+.stat.amber{border-left-color:var(--amber);} .stat.ember{border-left-color:var(--ember);} .stat.forest{border-left-color:var(--forest);}
+.stat-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:600;}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;margin-top:4px;color:var(--forest-dk);}
+.stat.ember .stat-val{color:var(--ember);}
+
+label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;}
+.field{margin-bottom:12px;}
+input[type=text],input[type=number],input[type=date],input[type=tel],select{width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-size:14.5px;background:#fff;color:var(--ink);}
+input:focus,select:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber);}
+.btn{background:var(--forest);color:#fff;border:none;padding:10px 18px;border-radius:9px;font-weight:600;font-size:14px;}
+.btn:hover{background:var(--forest-dk);}
+.btn:disabled{opacity:.55;}
+.btn.amber{background:var(--amber);color:var(--forest-dk);} .btn.amber:hover{background:var(--amber-dk);}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--ink);} .btn.ghost:hover{border-color:var(--forest);}
+.btn.danger{background:#fff;border:1.5px solid var(--ember);color:var(--ember);padding:6px 10px;font-size:12.5px;}
+.btn.sm{padding:6px 12px;font-size:12.5px;}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.checkbox-row input{width:auto;} .checkbox-row label{margin:0;}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;padding:10px 8px;border-bottom:2px solid var(--line);color:var(--ink-soft);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;}
+.tag.ok{background:#E4F0E8;color:var(--ok);} .tag.pending{background:#FBEAE0;color:var(--ember);}
+.tag.church{background:#EEE8D6;color:var(--forest-dk);} .tag.shirt{background:#E6EEF5;color:#2E5A7A;}
+.amt-in{color:var(--ok);font-weight:600;} .amt-out{color:var(--ember);font-weight:600;}
+.table-scroll{overflow-x:auto;}
+.empty{padding:30px 10px;text-align:center;color:var(--ink-soft);font-size:14px;}
+
+@media (max-width:640px){
+  .table-scroll table, .table-scroll thead, .table-scroll tbody, .table-scroll th, .table-scroll td, .table-scroll tr{display:block;}
+  .table-scroll thead{display:none;}
+  .table-scroll tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:8px 10px;background:#fff;}
+  .table-scroll td{border:none;padding:5px 2px;display:flex;justify-content:space-between;gap:10px;}
+  .table-scroll td::before{content:attr(data-label);font-weight:700;color:var(--ink-soft);font-size:11px;text-transform:uppercase;}
+  .hero h1{font-size:22px;}
+}
+
+.section-sub{font-size:12.5px;color:var(--ink-soft);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:520px){.two-col{grid-template-columns:1fr;}}
+.pill-toggle{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.pill-toggle button{padding:7px 14px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:600;color:var(--ink-soft);}
+.pill-toggle button.active{background:var(--forest);color:#fff;border-color:var(--forest);}
+.divider{height:1px;background:var(--line);margin:16px 0;}
+.small-note{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+.church-card{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;}
+.church-card summary{cursor:pointer;font-weight:600;font-family:'Fraunces',serif;font-size:16px;color:var(--forest-dk);display:flex;justify-content:space-between;align-items:center;}
+.church-mini-stats{display:flex;gap:16px;font-size:12.5px;color:var(--ink-soft);margin-top:4px;flex-wrap:wrap;}
+.church-mini-stats b{color:var(--ink);}
+.split-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:520px){.split-row{grid-template-columns:1fr;}}
+.split-total{font-size:12.5px;color:var(--ink-soft);margin-top:-4px;margin-bottom:12px;}
+.loading-veil{position:fixed;inset:0;background:rgba(250,246,236,.7);display:flex;align-items:center;justify-content:center;z-index:500;font-weight:600;color:var(--forest-dk);}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN GATE ============ -->
+<div id="gate">
+  <div class="gate-card">
+    <h1>🏕️ CampApp</h1>
+    <p>Acceso de administrador</p>
+    <input type="text" id="gate-pass" placeholder="Contraseña" onkeydown="if(event.key==='Enter') intentarEntrar()">
+    <button onclick="intentarEntrar()">Ingresar</button>
+    <div class="gate-err" id="gate-err">Contraseña incorrecta.</div>
+  </div>
+</div>
+
+<div id="loading-veil" class="loading-veil" style="display:none;">Sincronizando con la planilla...</div>
+
+<div id="edit-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(21,48,41,.55);z-index:800;align-items:center;justify-content:center;padding:16px;">
+  <div class="card" style="max-width:440px;width:100%;max-height:88vh;overflow-y:auto;margin-bottom:0;">
+    <h2 id="edit-modal-title">Editar</h2>
+    <div id="edit-modal-fields"></div>
+    <div class="row-actions" style="margin-top:14px;">
+      <button class="btn" onclick="guardarEdicionModal()">Guardar cambios</button>
+      <button class="btn ghost" onclick="cerrarModalEdicion()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SELECCIÓN DE CAMPAMENTO ============ -->
+<div id="camp-selector" style="display:none;position:fixed;inset:0;background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dk) 65%);z-index:900;padding:20px;overflow-y:auto;">
+  <div style="max-width:420px;margin:40px auto;text-align:center;">
+    <h1 style="color:#fff;font-size:26px;margin-bottom:6px;">🏕️ ¿Qué campamento?</h1>
+    <p style="color:#D9E4DB;font-size:13.5px;margin-bottom:22px;">Elegí con cuál querés trabajar.</p>
+    <div id="camp-list"></div>
+  </div>
+</div>
+
+<!-- ============ APP (oculta hasta ingresar contraseña) ============ -->
+<div id="app" style="display:none;">
+
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow" id="hero-camp-nombre">Panel de administración</div>
+      <h1>🏕️ CampApp</h1>
+    </div>
+    <div style="text-align:right;">
+      <div class="sync-status" id="sync-status">Sincronizado</div>
+      <button class="btn-refresh" onclick="sincronizar(true)">🔄 Actualizar</button>
+      <button class="btn-refresh" onclick="volverASelectorCamp()">🏕️ Cambiar</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab-btn active" data-tab="resumen">Resumen</button>
+  <button class="tab-btn" data-tab="inscripciones">Inscripciones</button>
+  <button class="tab-btn" data-tab="movimientos">Movimientos</button>
+  <button class="tab-btn" data-tab="estado">Estado por persona</button>
+  <button class="tab-btn" data-tab="iglesias">Iglesias</button>
+  <button class="tab-btn" data-tab="cajabanco">Caja ↔ Banco</button>
+  <button class="tab-btn" data-tab="config">Configuración</button>
+</div>
+
+<div class="wrap">
+
+  <div class="panel active" id="panel-resumen">
+    <div id="resumen-logo" style="text-align:center;"></div>
+    <div class="stats" id="resumen-stats"></div>
+    <div class="card">
+      <h2>💰 Saldo por medio de pago</h2>
+      <div class="stats" id="resumen-saldos"></div>
+    </div>
+    <div class="card">
+      <h2>⛪ Deuda por iglesia</h2>
+      <div class="table-scroll">
+        <table id="tabla-resumen-iglesias">
+          <thead><tr><th>Iglesia</th><th>Inscriptos</th><th>Total obligación</th><th>Pagado</th><th>Pendiente</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row-actions">
+      <button class="btn amber" onclick="exportarPDF('resumen','Resumen General - CampApp')">📄 Exportar (PDF)</button>
+      <button class="btn ghost" onclick="exportarImagen('resumen','Resumen General - CampApp')">🖼️ Exportar (JPG)</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-inscripciones">
+    <div class="card">
+      <h2>➕ Nueva inscripción</h2>
+      <div class="grid">
+        <div class="field"><label>Nombre completo</label><input type="text" id="i-nombre"></div>
+        <div class="field"><label>Cédula de identidad</label><input type="text" id="i-cedula"></div>
+        <div class="field"><label>Edad</label><input type="number" id="i-edad" min="0"></div>
+        <div class="field"><label>Iglesia</label><select id="i-iglesia"></select></div>
+        <div class="field"><label>Pastor / líder</label><input type="text" id="i-pastor"></div>
+        <div class="field"><label>Teléfono (opcional)</label><input type="tel" id="i-telefono"></div>
+        <div class="field"><label>Cuota campamento (Gs.)</label><input type="number" id="i-cuota" step="1000"></div>
+        <div class="field"><label>Descuento (Gs.)</label><input type="number" id="i-descuento" step="1000" value="0"></div>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="i-remera" onchange="toggleRemeraCampos()">
+        <label for="i-remera">Quiere remera</label>
+      </div>
+      <div class="grid" id="i-remera-campos" style="display:none;">
+        <div class="field"><label>Talla</label><select id="i-talla"><option>XS</option><option>S</option><option>M</option><option selected>L</option><option>XL</option><option>XXL</option></select></div>
+        <div class="field"><label>Costo remera (Gs.)</label><input type="number" id="i-costo-remera" step="1000"></div>
+      </div>
+      <button class="btn" id="btn-inscribir" onclick="agregarInscripto()">Inscribir</button>
+    </div>
+    <div class="card">
+      <h2>📋 Inscriptos <span class="section-sub">(<span id="count-inscriptos">0</span>)</span></h2>
+      <div class="field" style="max-width:280px;"><input type="text" id="buscar-inscripto" placeholder="Buscar por nombre o iglesia..." oninput="renderInscripciones()"></div>
+      <div class="table-scroll">
+        <table id="tabla-inscripciones">
+          <thead><tr><th>Nombre</th><th>Cédula</th><th>Edad</th><th>Iglesia</th><th>Pastor/líder</th><th>Remera</th><th>Descuento</th><th>Obligación</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-movimientos">
+    <div class="card">
+      <h2>➕ Nuevo movimiento</h2>
+      <div class="pill-toggle" id="tipo-mov-toggle">
+        <button type="button" class="active" data-tipo="ingreso" onclick="setTipoMov('ingreso')">Ingreso</button>
+        <button type="button" data-tipo="gasto" onclick="setTipoMov('gasto')">Gasto</button>
+      </div>
+      <div class="pill-toggle" id="modo-pago-toggle">
+        <button type="button" class="active" data-modo="simple" onclick="setModoPago('simple')">Pago simple</button>
+        <button type="button" data-modo="multi" onclick="setModoPago('multi')">Varias personas / conceptos</button>
+      </div>
+      <div class="grid">
+        <div class="field"><label>Fecha</label><input type="date" id="m-fecha"></div>
+        <div class="field"><label>Descripción (opcional)</label><input type="text" id="m-desc"></div>
+      </div>
+
+      <div id="simple-mov-wrap">
+        <div class="grid">
+          <div class="field"><label>Item</label><select id="m-item"></select></div>
+          <div class="field" id="wrap-m-persona"><label>Inscripto (si es pago de obligación)</label><select id="m-persona"><option value="">— No corresponde a una persona —</option></select></div>
+        </div>
+      </div>
+
+      <div id="multi-mov-wrap" style="display:none;">
+        <p class="small-note" style="margin-top:0;">Agregá una línea por cada persona y concepto. Ej: 3 líneas de "Cuota campamento" (una por persona) + 1 línea de "Remera".</p>
+        <div id="lineas-pago-cont"></div>
+        <button class="btn ghost sm" type="button" onclick="agregarLineaPago()">+ Agregar línea</button>
+        <div class="small-note" style="margin-top:10px;">Suma de las líneas: <b class="mono" id="lineas-total-preview">Gs. 0</b></div>
+      </div>
+
+      <label style="margin:14px 0 6px;">Monto — se puede dividir entre efectivo y banco</label>
+      <div class="split-row">
+        <div class="field"><label>Efectivo (Gs.)</label><input type="number" id="m-monto-efectivo" step="1000" value="0"></div>
+        <div class="field"><label>Banco (Gs.)</label><input type="number" id="m-monto-banco" step="1000" value="0"></div>
+      </div>
+      <div class="split-total">Total del movimiento: <b class="mono" id="m-total-preview">Gs. 0</b></div>
+      <button class="btn" id="btn-mov" onclick="agregarMovimiento()">Registrar movimiento</button>
+      <div class="err" id="mov-err" style="display:none;color:var(--ember);font-size:13px;margin-top:8px;"></div>
+    </div>
+    <div class="card">
+      <h2>📑 Registro de movimientos</h2>
+      <div class="table-scroll">
+        <table id="tabla-movimientos">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Item</th><th>Persona</th><th>Efectivo</th><th>Banco</th><th>Total</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-estado">
+    <div class="card">
+      <h2>🧾 Estado de cuenta por inscripto</h2>
+      <div class="field" style="max-width:320px;"><label>Seleccionar inscripto</label><select id="e-persona" onchange="renderEstadoPersona()"></select></div>
+      <div id="estado-persona-detalle"></div>
+      <div class="row-actions" id="estado-persona-acciones" style="display:none;">
+        <button class="btn amber" onclick="exportarPDF('estado-persona-card','Estado de cuenta')">📄 Exportar (PDF)</button>
+        <button class="btn ghost" onclick="exportarImagen('estado-persona-card','Estado de cuenta')">🖼️ Exportar (JPG)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-iglesias">
+    <div class="card">
+      <h2>➕ Nueva iglesia</h2>
+      <div class="two-col"><div class="field"><label>Nombre de la iglesia</label><input type="text" id="ig-nombre"></div></div>
+      <button class="btn" id="btn-iglesia" onclick="agregarIglesia()">Agregar iglesia</button>
+    </div>
+    <div class="card">
+      <h2>🧾 Estado de cuenta por iglesia</h2>
+      <div class="field" style="max-width:320px;"><label>Seleccionar iglesia</label><select id="ig-select-estado" onchange="renderEstadoIglesia()"></select></div>
+      <div id="estado-iglesia-detalle"></div>
+      <div class="row-actions" id="estado-iglesia-acciones" style="display:none;">
+        <button class="btn amber" onclick="exportarPDF('estado-iglesia-card','Estado de cuenta por iglesia')">📄 Exportar (PDF)</button>
+        <button class="btn ghost" onclick="exportarImagen('estado-iglesia-card','Estado de cuenta por iglesia')">🖼️ Exportar (JPG)</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>⛪ Vista general de todas las iglesias</h2>
+      <div id="lista-iglesias-detalle"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-cajabanco">
+    <div class="card">
+      <h2>🏦 Saldos iniciales</h2>
+      <div class="two-col">
+        <div class="field"><label>Saldo inicial en Caja (Gs.)</label><input type="number" id="cfg-caja-inicial" step="1000"></div>
+        <div class="field"><label>Saldo inicial en Banco (Gs.)</label><input type="number" id="cfg-banco-inicial" step="1000"></div>
+      </div>
+      <button class="btn" id="btn-saldos" onclick="guardarSaldosIniciales()">Guardar saldos iniciales</button>
+    </div>
+    <div class="card">
+      <h2>🔁 Transferencia interna</h2>
+      <div class="grid">
+        <div class="field"><label>Fecha</label><input type="date" id="t-fecha"></div>
+        <div class="field"><label>Dirección</label><select id="t-tipo"><option value="caja->banco">Caja → Banco (depósito)</option><option value="banco->caja">Banco → Caja (retiro)</option></select></div>
+        <div class="field"><label>Monto (Gs.)</label><input type="number" id="t-monto" step="1000"></div>
+        <div class="field"><label>Descripción (opcional)</label><input type="text" id="t-desc"></div>
+      </div>
+      <button class="btn" id="btn-transf" onclick="agregarTransferencia()">Registrar transferencia</button>
+      <p class="small-note">Las transferencias internas mueven dinero entre Caja y Banco, pero no afectan el total de ingresos ni gastos.</p>
+    </div>
+    <div class="card">
+      <h2>Historial de transferencias</h2>
+      <div class="table-scroll">
+        <table id="tabla-transferencias"><thead><tr><th>Fecha</th><th>Movimiento</th><th>Monto</th><th></th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-config">
+    <div class="card">
+      <h2>🎨 Apariencia</h2>
+      <p class="small-note" style="margin-top:0;">Elegí una paleta de colores para el panel. Se aplica para todos los administradores.</p>
+      <div class="field" style="max-width:280px;">
+        <label>Combinación de colores</label>
+        <select id="cfg-tema" onchange="aplicarTema(this.value)">
+          <option value="bosque">🌲 Bosque (verde y ámbar)</option>
+          <option value="oceano">🌊 Océano (azul y turquesa)</option>
+          <option value="purpura">💜 Púrpura real</option>
+          <option value="atardecer">🌅 Atardecer (naranja y rosa)</option>
+          <option value="esmeralda">💎 Esmeralda</option>
+        </select>
+      </div>
+      <button class="btn" onclick="guardarTema()">Guardar apariencia</button>
+    </div>
+    <div class="card">
+      <h2>⚙️ Valores estándar</h2>
+      <div class="two-col">
+        <div class="field"><label>Cuota campamento estándar (Gs.)</label><input type="number" id="cfg-cuota-estandar" step="1000"></div>
+        <div class="field"><label>Costo remera estándar (Gs.)</label><input type="number" id="cfg-remera-estandar" step="1000"></div>
+      </div>
+      <button class="btn" id="btn-valores" onclick="guardarValoresEstandar()">Guardar valores</button>
+      <p class="small-note">Se aplican a las nuevas inscripciones (públicas y por administrador). Cada inscripto puede tener montos distintos editando su fila.</p>
+    </div>
+    <div class="card">
+      <h2>🖼️ Logo del campamento</h2>
+      <p class="small-note" style="margin-top:0;">Aparece en el Resumen general y en los estados de cuenta (persona e iglesia). Usá una imagen liviana, idealmente menor a 30 KB (un logo cuadrado simple, no una foto), porque se guarda dentro de la planilla.</p>
+      <div id="logo-preview-wrap" style="margin-bottom:10px;"></div>
+      <input type="file" id="cfg-logo-input" accept="image/*" onchange="previsualizarLogo(event)">
+      <div class="row-actions" style="margin-top:10px;">
+        <button class="btn" onclick="guardarLogo()">Guardar logo</button>
+        <button class="btn ghost sm" onclick="quitarLogo()">Quitar logo</button>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h2>📥 Items de ingreso</h2>
+        <div class="field"><input type="text" id="cfg-item-ingreso" placeholder="Ej: Cuota campamento"></div>
+        <button class="btn sm ghost" onclick="agregarItem('ingreso')">Agregar item</button>
+        <div class="divider"></div>
+        <div id="lista-items-ingreso"></div>
+      </div>
+      <div class="card">
+        <h2>📤 Items de gasto</h2>
+        <div class="field"><input type="text" id="cfg-item-gasto" placeholder="Ej: Alimentación"></div>
+        <button class="btn sm ghost" onclick="agregarItem('gasto')">Agregar item</button>
+        <div class="divider"></div>
+        <div id="lista-items-gasto"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🌐 Datos del flyer público</h2>
+      <p class="small-note">Esto es lo que ven los acampantes en la pantalla de inscripción (index.html).</p>
+      <div class="grid">
+        <div class="field"><label>Fecha del campamento</label><input type="text" id="cfg-fecha-camp"></div>
+        <div class="field"><label>Lugar</label><input type="text" id="cfg-lugar-camp"></div>
+        <div class="field"><label>Organiza</label><input type="text" id="cfg-organiza"></div>
+        <div class="field"><label>Instagram (link)</label><input type="text" id="cfg-instagram"></div>
+      </div>
+      <div class="field"><label>Versículo</label><input type="text" id="cfg-versiculo"></div>
+      <div class="field"><label>Cita bíblica</label><input type="text" id="cfg-cita"></div>
+      <div class="field"><label>Nota de costo (info de tramos de precio)</label><input type="text" id="cfg-costo-info"></div>
+      <button class="btn" id="btn-flyer" onclick="guardarFlyer()">Guardar datos del flyer</button>
+    </div>
+    <div class="card">
+      <p class="small-note">Todos los datos se guardan en la planilla de Google Sheets conectada a esta app. La contraseña de administrador vive en este archivo (admin.html) — recordá que no es una seguridad bancaria, solo evita accesos casuales.</p>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+/* ⚠️ Lista de campamentos disponibles. Cada uno = su propia planilla + Apps Script.
+   Para agregar un campamento nuevo: crear una planilla nueva, pegar Code.gs, correr setupSheets,
+   implementar como Web App, copiar la URL (termina en /exec) y agregar una línea acá abajo. */
+const CAMPAMENTOS = [
+  { id: 'avivados2027', nombre: 'Avivados Camp 2027', apiUrl: 'https://script.google.com/macros/s/AKfycbyrU08-654en2Fg84cO3w9Em68v_ItOIf3-JbbOO7YDGXxdoqsfpDlkYpKJvvxg2LmU/exec' }
+  // , { id: 'campo2028', nombre: 'Campamento 2028', apiUrl: 'https://script.google.com/macros/s/OTRA_URL_AQUI/exec' }
+];
+const ADMIN_PASSWORD = "campaapepmra";
+let API_URL = '';
+let CAMP_ACTUAL = null;
+
+/* ============ LOGIN GATE + SELECTOR DE CAMPAMENTO ============ */
+function intentarEntrar(){
+  const val = document.getElementById('gate-pass').value;
+  if(val === ADMIN_PASSWORD){
+    sessionStorage.setItem('campapp_admin_ok', '1');
+    document.getElementById('gate').style.display = 'none';
+    mostrarSelectorCamp();
+  }else{
+    document.getElementById('gate-err').style.display = 'block';
+  }
+}
+function mostrarSelectorCamp(){
+  document.getElementById('app').style.display = 'none';
+  const cont = document.getElementById('camp-list');
+  cont.innerHTML = CAMPAMENTOS.map(c=>`<button class="camp-card" onclick="elegirCampamento('${c.id}')"><span class="cc-name">${c.nombre}</span><span class="cc-arrow">→</span></button>`).join('')
+    || '<p style="color:#fff;">No hay campamentos configurados todavía.</p>';
+  document.getElementById('camp-selector').style.display = 'block';
+}
+function elegirCampamento(id){
+  const camp = CAMPAMENTOS.find(c=>c.id===id);
+  if(!camp) return;
+  CAMP_ACTUAL = camp;
+  API_URL = camp.apiUrl;
+  sessionStorage.setItem('campapp_camp_id', id);
+  document.getElementById('camp-selector').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('hero-camp-nombre').textContent = camp.nombre;
+  sincronizar(true);
+}
+function volverASelectorCamp(){
+  mostrarSelectorCamp();
+}
+
+if(sessionStorage.getItem('campapp_admin_ok') === '1'){
+  document.getElementById('gate').style.display = 'none';
+  const savedCampId = sessionStorage.getItem('campapp_camp_id');
+  const savedCamp = savedCampId && CAMPAMENTOS.find(c=>c.id===savedCampId);
+  if(savedCamp){
+    elegirCampamento(savedCamp.id);
+  }else{
+    mostrarSelectorCamp();
+  }
+}
+
+/* ============ DATA (en memoria, sincronizada con Sheets) ============ */
+let DATA = { personas:[], iglesias:[], movimientos:[], transferencias:[], config:{} };
+
+function fmt(n){ n = Number(n)||0; return "Gs. " + n.toLocaleString('es-PY',{maximumFractionDigits:0}); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function obligacionTotal(p){
+  const base = Number(p.cuotaCampamento||0) + (esRemera(p) ? Number(p.costoRemera||0) : 0);
+  const total = base - Number(p.descuento||0);
+  return total > 0 ? total : 0;
+}
+function esRemera(p){ return p.quiereRemera===true || p.quiereRemera==='true'; }
+
+function setSyncStatus(msg, isErr){
+  const el = document.getElementById('sync-status');
+  el.textContent = msg;
+  el.classList.toggle('err', !!isErr);
+}
+function setLoading(on){
+  document.getElementById('loading-veil').style.display = on ? 'flex' : 'none';
+}
+function setBusy(busy){
+  document.querySelectorAll('#app button').forEach(b=> b.disabled = busy);
+}
+
+async function sincronizar(showVeil){
+  if(showVeil) setLoading(true);
+  setSyncStatus('Sincronizando...');
+  try{
+    const res = await fetch(API_URL + '?action=getAll');
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    DATA = data;
+    renderAll();
+    setSyncStatus('Sincronizado ✓');
+  }catch(e){
+    setSyncStatus('Error de sincronización — revisá API_URL', true);
+  }finally{
+    if(showVeil) setLoading(false);
+  }
+}
+
+async function apiPost(action, extra){
+  setBusy(true);
+  try{
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action }, extra))
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    await sincronizar(false);
+    return data;
+  }catch(e){
+    setSyncStatus('Error al guardar — intentá de nuevo', true);
+    throw e;
+  }finally{
+    setBusy(false);
+  }
+}
+
+/* ============ TABS ============ */
+document.getElementById('tabs').addEventListener('click', e=>{
+  const b = e.target.closest('.tab-btn');
+  if(!b) return;
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+b.dataset.tab).classList.add('active');
+  renderAll();
+});
+
+/* ============ MODAL GENÉRICO DE EDICIÓN ============ */
+let editModalContext = null;
+function escAttr(s){ return (s===undefined||s===null?'':String(s)).replace(/"/g,'&quot;'); }
+
+function abrirEdicion(tipo, id){
+  editModalContext = { tipo, id };
+  const fieldsCont = document.getElementById('edit-modal-fields');
+  let html = '', titulo = 'Editar';
+
+  if(tipo==='persona'){
+    const p = DATA.personas.find(x=>x.id===id); if(!p) return;
+    titulo = 'Editar inscripto';
+    const tallaOk = esRemera(p);
+    html = `
+      <div class="field"><label>Nombre completo</label><input type="text" id="edit-nombre" value="${escAttr(p.nombre)}"></div>
+      <div class="field"><label>Cédula</label><input type="text" id="edit-cedula" value="${escAttr(p.cedula)}"></div>
+      <div class="two-col">
+        <div class="field"><label>Edad</label><input type="number" id="edit-edad" value="${p.edad||''}"></div>
+        <div class="field"><label>Teléfono</label><input type="tel" id="edit-telefono" value="${escAttr(p.telefono)}"></div>
+      </div>
+      <div class="field"><label>Iglesia</label><select id="edit-iglesia">${DATA.iglesias.map(i=>`<option value="${i.id}" ${i.id===p.iglesiaId?'selected':''}>${i.nombre}</option>`).join('')}</select></div>
+      <div class="field"><label>Pastor/líder</label><input type="text" id="edit-pastor" value="${escAttr(p.pastor)}"></div>
+      <div class="two-col">
+        <div class="field"><label>Cuota campamento</label><input type="number" id="edit-cuota" value="${p.cuotaCampamento||0}"></div>
+        <div class="field"><label>Descuento</label><input type="number" id="edit-descuento" value="${p.descuento||0}"></div>
+      </div>
+      <div class="checkbox-row"><input type="checkbox" id="edit-remera" ${tallaOk?'checked':''} onchange="document.getElementById('edit-talla-wrap').style.display=this.checked?'grid':'none'"><label>Quiere remera</label></div>
+      <div class="two-col" id="edit-talla-wrap" style="display:${tallaOk?'grid':'none'};">
+        <div class="field"><label>Talla</label><select id="edit-talla">${['XS','S','M','L','XL','XXL'].map(t=>`<option ${t===p.tallaRemera?'selected':''}>${t}</option>`).join('')}</select></div>
+        <div class="field"><label>Costo remera</label><input type="number" id="edit-costo-remera" value="${p.costoRemera||0}"></div>
+      </div>`;
+  } else if(tipo==='iglesia'){
+    const ig = DATA.iglesias.find(x=>x.id===id); if(!ig) return;
+    titulo = 'Editar iglesia';
+    html = `<div class="field"><label>Nombre</label><input type="text" id="edit-nombre-iglesia" value="${escAttr(ig.nombre)}"></div>`;
+  } else if(tipo==='movimiento'){
+    const m = DATA.movimientos.find(x=>x.id===id); if(!m) return;
+    titulo = 'Editar movimiento';
+    const items = m.tipo==='ingreso' ? (DATA.config.itemsIngreso||[]) : (DATA.config.itemsGasto||[]);
+    html = `
+      <p class="small-note" style="margin-top:0;">Tipo: ${m.tipo==='ingreso'?'📥 Ingreso':'📤 Gasto'} (no se puede cambiar; eliminá y creá uno nuevo si hace falta cambiar el tipo)</p>
+      <div class="two-col">
+        <div class="field"><label>Fecha</label><input type="date" id="edit-mov-fecha" value="${m.fecha}"></div>
+        <div class="field"><label>Item</label><select id="edit-mov-item">${items.map(it=>`<option ${it===m.item?'selected':''}>${it}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label>Persona</label><select id="edit-mov-persona"><option value="">— No corresponde —</option>${DATA.personas.map(p=>`<option value="${p.id}" ${p.id===m.personaId?'selected':''}>${p.nombre}</option>`).join('')}</select></div>
+      <div class="two-col">
+        <div class="field"><label>Efectivo (Gs.)</label><input type="number" id="edit-mov-efectivo" value="${m.montoEfectivo||0}"></div>
+        <div class="field"><label>Banco (Gs.)</label><input type="number" id="edit-mov-banco" value="${m.montoBanco||0}"></div>
+      </div>
+      <div class="field"><label>Descripción</label><input type="text" id="edit-mov-desc" value="${escAttr(m.desc)}"></div>`;
+  } else if(tipo==='transferencia'){
+    const t = DATA.transferencias.find(x=>x.id===id); if(!t) return;
+    titulo = 'Editar transferencia';
+    html = `
+      <div class="two-col">
+        <div class="field"><label>Fecha</label><input type="date" id="edit-t-fecha" value="${t.fecha}"></div>
+        <div class="field"><label>Dirección</label><select id="edit-t-tipo"><option value="caja->banco" ${t.tipo==='caja->banco'?'selected':''}>Caja → Banco</option><option value="banco->caja" ${t.tipo==='banco->caja'?'selected':''}>Banco → Caja</option></select></div>
+      </div>
+      <div class="field"><label>Monto (Gs.)</label><input type="number" id="edit-t-monto" value="${t.monto||0}"></div>
+      <div class="field"><label>Descripción</label><input type="text" id="edit-t-desc" value="${escAttr(t.desc)}"></div>`;
+  }
+
+  document.getElementById('edit-modal-title').textContent = titulo;
+  fieldsCont.innerHTML = html;
+  document.getElementById('edit-modal-overlay').style.display = 'flex';
+}
+function cerrarModalEdicion(){
+  document.getElementById('edit-modal-overlay').style.display = 'none';
+  editModalContext = null;
+}
+async function guardarEdicionModal(){
+  if(!editModalContext) return;
+  const { tipo, id } = editModalContext;
+  let data = {};
+  if(tipo==='persona'){
+    const quiereRemera = document.getElementById('edit-remera').checked;
+    data = {
+      nombre: document.getElementById('edit-nombre').value.trim(),
+      cedula: document.getElementById('edit-cedula').value.trim(),
+      edad: document.getElementById('edit-edad').value,
+      telefono: document.getElementById('edit-telefono').value.trim(),
+      iglesiaId: document.getElementById('edit-iglesia').value,
+      pastor: document.getElementById('edit-pastor').value.trim(),
+      cuotaCampamento: Number(document.getElementById('edit-cuota').value)||0,
+      descuento: Number(document.getElementById('edit-descuento').value)||0,
+      quiereRemera,
+      tallaRemera: quiereRemera ? document.getElementById('edit-talla').value : '',
+      costoRemera: Number(document.getElementById('edit-costo-remera').value)||0
+    };
+    await apiPost('updatePersona', { id, data });
+  } else if(tipo==='iglesia'){
+    data = { nombre: document.getElementById('edit-nombre-iglesia').value.trim() };
+    await apiPost('updateIglesia', { id, data });
+  } else if(tipo==='movimiento'){
+    const ef = Number(document.getElementById('edit-mov-efectivo').value)||0;
+    const ba = Number(document.getElementById('edit-mov-banco').value)||0;
+    data = {
+      fecha: document.getElementById('edit-mov-fecha').value,
+      item: document.getElementById('edit-mov-item').value,
+      personaId: document.getElementById('edit-mov-persona').value || '',
+      montoEfectivo: ef, montoBanco: ba, monto: ef+ba,
+      desc: document.getElementById('edit-mov-desc').value.trim()
+    };
+    await apiPost('updateMovimiento', { id, data });
+  } else if(tipo==='transferencia'){
+    data = {
+      fecha: document.getElementById('edit-t-fecha').value,
+      tipo: document.getElementById('edit-t-tipo').value,
+      monto: Number(document.getElementById('edit-t-monto').value)||0,
+      desc: document.getElementById('edit-t-desc').value.trim()
+    };
+    await apiPost('updateTransferencia', { id, data });
+  }
+  cerrarModalEdicion();
+}
+
+/* ============ IGLESIAS ============ */
+async function agregarIglesia(){
+  const nombre = document.getElementById('ig-nombre').value.trim();
+  if(!nombre){ alert('Ingresá el nombre de la iglesia'); return; }
+  await apiPost('addIglesia', { data: { nombre } });
+  document.getElementById('ig-nombre').value='';
+}
+async function eliminarIglesia(id){
+  const enUso = DATA.personas.some(p=>p.iglesiaId===id);
+  if(enUso){ alert('No se puede eliminar: hay inscriptos asociados a esta iglesia.'); return; }
+  if(!confirm('¿Eliminar esta iglesia?')) return;
+  await apiPost('deleteIglesia', { id });
+}
+function iglesiaNombre(id){ const i = DATA.iglesias.find(x=>x.id===id); return i? i.nombre : '—'; }
+function renderSelectIglesias(){
+  const sel = document.getElementById('i-iglesia');
+  sel.innerHTML = DATA.iglesias.map(i=>`<option value="${i.id}">${i.nombre}</option>`).join('') || '<option value="">Agregá una iglesia primero</option>';
+}
+
+/* ============ PERSONAS ============ */
+function toggleRemeraCampos(){
+  document.getElementById('i-remera-campos').style.display = document.getElementById('i-remera').checked ? 'grid' : 'none';
+}
+async function agregarInscripto(){
+  const nombre = document.getElementById('i-nombre').value.trim();
+  const cedula = document.getElementById('i-cedula').value.trim();
+  const edad = document.getElementById('i-edad').value;
+  const iglesiaId = document.getElementById('i-iglesia').value;
+  const pastor = document.getElementById('i-pastor').value.trim();
+  const telefono = document.getElementById('i-telefono').value.trim();
+  let cuota = document.getElementById('i-cuota').value;
+  cuota = cuota === '' ? (DATA.config.cuotaEstandar||260000) : Number(cuota);
+  const descuento = Number(document.getElementById('i-descuento').value)||0;
+  const quiereRemera = document.getElementById('i-remera').checked;
+  const tallaRemera = document.getElementById('i-talla').value;
+  let costoRemera = document.getElementById('i-costo-remera').value;
+  costoRemera = costoRemera === '' ? (DATA.config.remeraEstandar||85000) : Number(costoRemera);
+
+  if(!nombre){ alert('Ingresá el nombre'); return; }
+  if(!iglesiaId){ alert('Seleccioná una iglesia'); return; }
+
+  await apiPost('addPersona', { data: { nombre, cedula, edad, iglesiaId, pastor, telefono, cuotaCampamento: cuota, quiereRemera, tallaRemera, costoRemera, descuento } });
+
+  document.getElementById('i-nombre').value='';
+  document.getElementById('i-cedula').value='';
+  document.getElementById('i-edad').value='';
+  document.getElementById('i-descuento').value='0';
+  document.getElementById('i-pastor').value='';
+  document.getElementById('i-telefono').value='';
+  document.getElementById('i-cuota').value = DATA.config.cuotaEstandar||260000;
+  document.getElementById('i-remera').checked = false;
+  document.getElementById('i-costo-remera').value = DATA.config.remeraEstandar||85000;
+  toggleRemeraCampos();
+}
+async function eliminarPersona(id){
+  if(!confirm('¿Eliminar este inscripto? También se eliminarán sus movimientos asociados.')) return;
+  await apiPost('deletePersona', { id });
+  for(const m of DATA.movimientos.filter(m=>m.personaId===id)){
+    await apiPost('deleteMovimiento', { id: m.id });
+  }
+}
+function pagadoPorPersona(personaId){
+  return DATA.movimientos.filter(m=>m.tipo==='ingreso' && m.personaId===personaId).reduce((s,m)=>s+Number(m.monto),0);
+}
+function renderInscripciones(){
+  const q = (document.getElementById('buscar-inscripto').value||'').toLowerCase();
+  const tbody = document.querySelector('#tabla-inscripciones tbody');
+  const filtradas = DATA.personas.filter(p=>{
+    const ig = iglesiaNombre(p.iglesiaId).toLowerCase();
+    return (p.nombre||'').toLowerCase().includes(q) || ig.includes(q);
+  });
+  document.getElementById('count-inscriptos').textContent = DATA.personas.length;
+  if(!filtradas.length){ tbody.innerHTML = `<tr><td colspan="12"><div class="empty">Todavía no hay inscriptos que coincidan.</div></td></tr>`; return; }
+  tbody.innerHTML = filtradas.map(p=>{
+    const pagado = pagadoPorPersona(p.id);
+    const obligacion = obligacionTotal(p);
+    const saldo = obligacion - pagado;
+    const estado = saldo<=0 ? '<span class="tag ok">Al día</span>' : '<span class="tag pending">Pendiente</span>';
+    const remera = esRemera(p) ? `<span class="tag shirt">Sí · ${p.tallaRemera}</span>` : 'No';
+    return `<tr>
+      <td data-label="Nombre"><b>${p.nombre}</b></td>
+      <td data-label="Cédula">${p.cedula||'—'}</td>
+      <td data-label="Edad">${p.edad||'—'}</td>
+      <td data-label="Iglesia">${iglesiaNombre(p.iglesiaId)}</td>
+      <td data-label="Pastor/líder">${p.pastor||'—'}</td>
+      <td data-label="Remera">${remera}</td>
+      <td data-label="Descuento" class="mono">${Number(p.descuento)? fmt(p.descuento) : '—'}</td>
+      <td data-label="Obligación" class="mono">${fmt(obligacion)}</td>
+      <td data-label="Pagado" class="mono">${fmt(pagado)}</td>
+      <td data-label="Saldo" class="mono">${fmt(Math.max(saldo,0))}</td>
+      <td data-label="Estado">${estado}</td>
+      <td data-label="">
+        <button class="btn ghost sm" onclick="abrirEdicion('persona','${p.id}')">✏️ Editar</button>
+        <button class="btn danger" onclick="eliminarPersona('${p.id}')">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function renderSelectPersonas(){
+  const opts = DATA.personas.map(p=>`<option value="${p.id}">${p.nombre} (${iglesiaNombre(p.iglesiaId)})</option>`).join('');
+  document.getElementById('m-persona').innerHTML = '<option value="">— No corresponde a una persona —</option>' + opts;
+  document.getElementById('e-persona').innerHTML = '<option value="">Seleccioná...</option>' + opts;
+}
+
+/* ============ MOVIMIENTOS ============ */
+let tipoMovActual = 'ingreso';
+let modoPagoActual = 'simple';
+let lineasPago = [];
+
+function setTipoMov(t){
+  tipoMovActual = t;
+  document.querySelectorAll('#tipo-mov-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.tipo===t));
+  renderSelectItemsMov();
+  document.getElementById('wrap-m-persona').style.display = t==='ingreso' ? 'block' : 'none';
+  renderLineasPago();
+}
+function setModoPago(m){
+  modoPagoActual = m;
+  document.querySelectorAll('#modo-pago-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.modo===m));
+  document.getElementById('simple-mov-wrap').style.display = m==='simple' ? 'block' : 'none';
+  document.getElementById('multi-mov-wrap').style.display = m==='multi' ? 'block' : 'none';
+  if(m==='multi' && lineasPago.length===0) agregarLineaPago();
+}
+function renderSelectItemsMov(){
+  const items = tipoMovActual==='ingreso' ? (DATA.config.itemsIngreso||[]) : (DATA.config.itemsGasto||[]);
+  document.getElementById('m-item').innerHTML = items.map(it=>`<option value="${it}">${it}</option>`).join('');
+}
+
+function agregarLineaPago(){
+  lineasPago.push({ lid: 'l'+Date.now()+Math.random().toString(36).slice(2,5), personaId:'', item:'', monto:0 });
+  renderLineasPago();
+}
+function eliminarLineaPago(lid){
+  lineasPago = lineasPago.filter(l=>l.lid!==lid);
+  renderLineasPago();
+}
+function actualizarLineaPago(lid, campo, valor){
+  const l = lineasPago.find(x=>x.lid===lid);
+  if(l) l[campo] = campo==='monto' ? Number(valor)||0 : valor;
+  actualizarTotalLineas();
+}
+function renderLineasPago(){
+  const cont = document.getElementById('lineas-pago-cont');
+  const items = tipoMovActual==='ingreso' ? (DATA.config.itemsIngreso||[]) : (DATA.config.itemsGasto||[]);
+  const personaOpts = DATA.personas.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+  cont.innerHTML = lineasPago.map(l=>`
+    <div class="grid" style="grid-template-columns:1.3fr 1fr 0.8fr auto;align-items:end;margin-bottom:4px;">
+      <div class="field" style="margin-bottom:6px;">
+        <label>Persona</label>
+        <select onchange="actualizarLineaPago('${l.lid}','personaId', this.value)">
+          <option value="">— General —</option>${personaOpts}
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label>Concepto</label>
+        <select onchange="actualizarLineaPago('${l.lid}','item', this.value)">
+          <option value="">Seleccioná...</option>${items.map(it=>`<option value="${it}">${it}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label>Monto</label>
+        <input type="number" step="1000" value="${l.monto||''}" oninput="actualizarLineaPago('${l.lid}','monto', this.value)">
+      </div>
+      <button class="btn danger sm" style="margin-bottom:8px;" onclick="eliminarLineaPago('${l.lid}')">Quitar</button>
+    </div>`).join('') || '<div class="empty">Agregá al menos una línea.</div>';
+  // preselect the value in the just-rendered selects
+  const rows = cont.querySelectorAll('.grid');
+  lineasPago.forEach((l,i)=>{
+    const row = rows[i]; if(!row) return;
+    const selects = row.querySelectorAll('select');
+    if(selects[0]) selects[0].value = l.personaId;
+    if(selects[1]) selects[1].value = l.item;
+  });
+  actualizarTotalLineas();
+}
+function actualizarTotalLineas(){
+  const total = lineasPago.reduce((s,l)=>s+Number(l.monto||0),0);
+  const el = document.getElementById('lineas-total-preview');
+  if(el) el.textContent = fmt(total);
+}
+
+function actualizarPreviewTotal(){
+  const ef = Number(document.getElementById('m-monto-efectivo').value)||0;
+  const ba = Number(document.getElementById('m-monto-banco').value)||0;
+  document.getElementById('m-total-preview').textContent = fmt(ef+ba);
+}
+
+async function agregarMovimiento(){
+  const errEl = document.getElementById('mov-err');
+  errEl.style.display = 'none';
+  const fecha = document.getElementById('m-fecha').value || todayStr();
+  const desc = document.getElementById('m-desc').value.trim();
+  const montoEfectivo = Number(document.getElementById('m-monto-efectivo').value)||0;
+  const montoBanco = Number(document.getElementById('m-monto-banco').value)||0;
+  const totalGeneral = montoEfectivo + montoBanco;
+
+  if(!totalGeneral || totalGeneral<=0){ errEl.textContent='Ingresá un monto válido en efectivo y/o banco.'; errEl.style.display='block'; return; }
+
+  if(modoPagoActual === 'simple'){
+    const item = document.getElementById('m-item').value;
+    const personaId = document.getElementById('m-persona').value;
+    await apiPost('addMovimiento', { data: { fecha, tipo: tipoMovActual, item, personaId: personaId||'', montoEfectivo, montoBanco, monto: totalGeneral, desc, grupoPagoId:'' } });
+    document.getElementById('m-monto-efectivo').value='0';
+    document.getElementById('m-monto-banco').value='0';
+    document.getElementById('m-desc').value='';
+    actualizarPreviewTotal();
+    return;
+  }
+
+  // Modo múltiple: validar que la suma de líneas coincida con el total
+  const lineasValidas = lineasPago.filter(l=> l.item && Number(l.monto)>0);
+  if(!lineasValidas.length){ errEl.textContent='Agregá al menos una línea con concepto y monto.'; errEl.style.display='block'; return; }
+  const sumaLineas = lineasValidas.reduce((s,l)=>s+Number(l.monto),0);
+  if(sumaLineas !== totalGeneral){
+    errEl.textContent = `La suma de las líneas (${fmt(sumaLineas)}) no coincide con el total en efectivo + banco (${fmt(totalGeneral)}).`;
+    errEl.style.display='block';
+    return;
+  }
+
+  const grupoPagoId = 'g'+Date.now();
+  let acumEfectivo = 0, acumBanco = 0;
+  for(let i=0;i<lineasValidas.length;i++){
+    const l = lineasValidas[i];
+    const esUltima = i === lineasValidas.length-1;
+    let lineEfectivo, lineBanco;
+    if(esUltima){
+      lineEfectivo = montoEfectivo - acumEfectivo;
+      lineBanco = montoBanco - acumBanco;
+    }else{
+      const ratio = Number(l.monto) / sumaLineas;
+      lineEfectivo = Math.round(montoEfectivo * ratio);
+      lineBanco = Math.round(montoBanco * ratio);
+      acumEfectivo += lineEfectivo;
+      acumBanco += lineBanco;
+    }
+    await apiPost('addMovimiento', { data: {
+      fecha, tipo: tipoMovActual, item: l.item, personaId: l.personaId||'',
+      montoEfectivo: lineEfectivo, montoBanco: lineBanco, monto: Number(l.monto), desc, grupoPagoId
+    }});
+  }
+  lineasPago = [];
+  agregarLineaPago();
+  document.getElementById('m-monto-efectivo').value='0';
+  document.getElementById('m-monto-banco').value='0';
+  document.getElementById('m-desc').value='';
+  actualizarPreviewTotal();
+}
+async function eliminarMovimiento(id){
+  if(!confirm('¿Eliminar este movimiento?')) return;
+  await apiPost('deleteMovimiento', { id });
+}
+function renderMovimientos(){
+  const tbody = document.querySelector('#tabla-movimientos tbody');
+  const ordenados = [...DATA.movimientos].sort((a,b)=> String(b.fecha).localeCompare(String(a.fecha)));
+  if(!ordenados.length){ tbody.innerHTML = `<tr><td colspan="8"><div class="empty">Todavía no hay movimientos registrados.</div></td></tr>`; return; }
+  tbody.innerHTML = ordenados.map(m=>{
+    const persona = m.personaId ? (DATA.personas.find(p=>p.id===m.personaId)?.nombre || '—') : '—';
+    const montoClass = m.tipo==='ingreso' ? 'amt-in' : 'amt-out';
+    const signo = m.tipo==='ingreso' ? '+' : '−';
+    return `<tr>
+      <td data-label="Fecha">${m.fecha}</td>
+      <td data-label="Tipo">${m.tipo==='ingreso'?'📥 Ingreso':'📤 Gasto'}</td>
+      <td data-label="Item">${m.item}${m.grupoPagoId? ' <span class="tag shirt" title="Parte de un pago múltiple">🔗 agrupado</span>':''}${m.desc? ' · <span class="small-note" style="margin:0;">'+m.desc+'</span>':''}</td>
+      <td data-label="Persona">${persona}</td>
+      <td data-label="Efectivo" class="mono">${Number(m.montoEfectivo)? fmt(m.montoEfectivo) : '—'}</td>
+      <td data-label="Banco" class="mono">${Number(m.montoBanco)? fmt(m.montoBanco) : '—'}</td>
+      <td data-label="Total" class="mono ${montoClass}">${signo} ${fmt(m.monto)}</td>
+      <td data-label="">
+        <button class="btn ghost sm" onclick="abrirEdicion('movimiento','${m.id}')">✏️ Editar</button>
+        <button class="btn danger" onclick="eliminarMovimiento('${m.id}')">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ============ ESTADO POR PERSONA ============ */
+function renderEstadoPersona(){
+  const id = document.getElementById('e-persona').value;
+  const detalle = document.getElementById('estado-persona-detalle');
+  const acciones = document.getElementById('estado-persona-acciones');
+  if(!id){ detalle.innerHTML=''; acciones.style.display='none'; return; }
+  const p = DATA.personas.find(x=>x.id===id);
+  if(!p){ detalle.innerHTML=''; acciones.style.display='none'; return; }
+  const pagos = DATA.movimientos.filter(m=>m.personaId===id && m.tipo==='ingreso').sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
+  const pagado = pagos.reduce((s,m)=>s+Number(m.monto),0);
+  const obligacion = obligacionTotal(p);
+  const saldo = obligacion - pagado;
+  acciones.style.display='flex';
+  detalle.innerHTML = `
+    <div id="estado-persona-card" style="background:#fff;">
+      ${logoHtml()}
+      <h3 style="font-size:20px;margin-bottom:2px;">${p.nombre}</h3>
+      <p class="small-note" style="margin-top:0;">${p.cedula? 'C.I. '+p.cedula+' · ':''}${iglesiaNombre(p.iglesiaId)}${p.edad? ' · '+p.edad+' años':''}${p.pastor? ' · Pastor/líder: '+p.pastor:''}${p.telefono? ' · '+p.telefono:''}</p>
+      <div class="small-note" style="margin-bottom:10px;">Cuota campamento: <b>${fmt(p.cuotaCampamento)}</b>${esRemera(p)? ' · Remera ('+p.tallaRemera+'): <b>'+fmt(p.costoRemera)+'</b>' : ' · Sin remera'}${Number(p.descuento)? ' · Descuento: <b>-'+fmt(p.descuento)+'</b>':''}</div>
+      <div class="stats" style="margin-top:10px;">
+        <div class="stat forest"><div class="stat-label">Obligación total</div><div class="stat-val">${fmt(obligacion)}</div></div>
+        <div class="stat"><div class="stat-label">Pagado</div><div class="stat-val">${fmt(pagado)}</div></div>
+        <div class="stat ${saldo>0?'ember':''}"><div class="stat-label">Saldo pendiente</div><div class="stat-val">${fmt(Math.max(saldo,0))}</div></div>
+      </div>
+      <h3 style="font-size:15px;margin:14px 0 8px;">Historial de pagos</h3>
+      <div class="table-scroll">
+        <table><thead><tr><th>Fecha</th><th>Item</th><th>Efectivo</th><th>Banco</th><th>Total</th></tr></thead>
+        <tbody>${pagos.length? pagos.map(m=>`<tr><td data-label="Fecha">${m.fecha}</td><td data-label="Item">${m.item}</td><td data-label="Efectivo" class="mono">${Number(m.montoEfectivo)?fmt(m.montoEfectivo):'—'}</td><td data-label="Banco" class="mono">${Number(m.montoBanco)?fmt(m.montoBanco):'—'}</td><td data-label="Total" class="mono amt-in">${fmt(m.monto)}</td></tr>`).join('') : '<tr><td colspan="5"><div class="empty">Sin pagos registrados todavía.</div></td></tr>'}</tbody></table>
+      </div>
+    </div>`;
+}
+
+/* ============ IGLESIAS - REPORTE ============ */
+function renderSelectIglesiasEstado(){
+  const sel = document.getElementById('ig-select-estado');
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">Seleccioná...</option>' + DATA.iglesias.map(i=>`<option value="${i.id}">${i.nombre}</option>`).join('');
+  if(actual) sel.value = actual;
+}
+function renderEstadoIglesia(){
+  const id = document.getElementById('ig-select-estado').value;
+  const detalle = document.getElementById('estado-iglesia-detalle');
+  const acciones = document.getElementById('estado-iglesia-acciones');
+  if(!id){ detalle.innerHTML=''; acciones.style.display='none'; return; }
+  const ig = DATA.iglesias.find(x=>x.id===id);
+  if(!ig){ detalle.innerHTML=''; acciones.style.display='none'; return; }
+  const personas = DATA.personas.filter(p=>p.iglesiaId===id);
+  const totalObl = personas.reduce((s,p)=>s+obligacionTotal(p),0);
+  const totalPagado = personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
+  const pendiente = Math.max(totalObl-totalPagado,0);
+  acciones.style.display='flex';
+  const filas = personas.map(p=>{
+    const pagado = pagadoPorPersona(p.id);
+    const obligacion = obligacionTotal(p);
+    const saldo = Math.max(obligacion-pagado,0);
+    const estado = saldo<=0? '<span class="tag ok">Al día</span>' : '<span class="tag pending">Pendiente</span>';
+    return `<tr><td data-label="Nombre">${p.nombre}</td><td data-label="Obligación" class="mono">${fmt(obligacion)}</td><td data-label="Pagado" class="mono">${fmt(pagado)}</td><td data-label="Saldo" class="mono">${fmt(saldo)}</td><td data-label="Estado">${estado}</td></tr>`;
+  }).join('') || '<tr><td colspan="5"><div class="empty">Sin inscriptos en esta iglesia.</div></td></tr>';
+  detalle.innerHTML = `
+    <div id="estado-iglesia-card" style="background:#fff;">
+      ${logoHtml()}
+      <h3 style="font-size:20px;margin-bottom:2px;">${ig.nombre}</h3>
+      <p class="small-note" style="margin-top:0;">${personas.length} inscriptos</p>
+      <div class="stats" style="margin-top:10px;">
+        <div class="stat forest"><div class="stat-label">Obligación total</div><div class="stat-val">${fmt(totalObl)}</div></div>
+        <div class="stat"><div class="stat-label">Pagado</div><div class="stat-val">${fmt(totalPagado)}</div></div>
+        <div class="stat ${pendiente>0?'ember':''}"><div class="stat-label">Saldo pendiente</div><div class="stat-val">${fmt(pendiente)}</div></div>
+      </div>
+      <h3 style="font-size:15px;margin:14px 0 8px;">Detalle por inscripto</h3>
+      <div class="table-scroll">
+        <table><thead><tr><th>Nombre</th><th>Obligación</th><th>Pagado</th><th>Saldo</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table>
+      </div>
+    </div>`;
+}
+
+function renderReporteIglesias(){
+  const cont = document.getElementById('lista-iglesias-detalle');
+  if(!DATA.iglesias.length){ cont.innerHTML = '<div class="empty">Todavía no hay iglesias registradas.</div>'; return; }
+  cont.innerHTML = DATA.iglesias.map(ig=>{
+    const personas = DATA.personas.filter(p=>p.iglesiaId===ig.id);
+    const totalObl = personas.reduce((s,p)=>s+obligacionTotal(p),0);
+    const totalPagado = personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
+    const pendiente = totalObl - totalPagado;
+    const filas = personas.map(p=>{
+      const pagado = pagadoPorPersona(p.id);
+      const obligacion = obligacionTotal(p);
+      const saldo = obligacion - pagado;
+      const estado = saldo<=0? '<span class="tag ok">Al día</span>' : '<span class="tag pending">Pendiente</span>';
+      return `<tr><td data-label="Nombre">${p.nombre}</td><td data-label="Remera">${esRemera(p)? p.tallaRemera : 'No'}</td><td data-label="Obligación" class="mono">${fmt(obligacion)}</td><td data-label="Pagado" class="mono">${fmt(pagado)}</td><td data-label="Saldo" class="mono">${fmt(Math.max(saldo,0))}</td><td data-label="Estado">${estado}</td></tr>`;
+    }).join('') || '<tr><td colspan="6"><div class="empty">Sin inscriptos en esta iglesia.</div></td></tr>';
+    return `<details class="church-card">
+      <summary>${ig.nombre} <span>
+        <button class="btn ghost sm" onclick="event.preventDefault();event.stopPropagation();abrirEdicion('iglesia','${ig.id}')">✏️ Editar</button>
+        <button class="btn danger sm" onclick="event.preventDefault();event.stopPropagation();eliminarIglesia('${ig.id}')">Eliminar</button>
+      </span></summary>
+      <div class="church-mini-stats">
+        <span>Inscriptos: <b>${personas.length}</b></span>
+        <span>Obligación total: <b>${fmt(totalObl)}</b></span>
+        <span>Pagado: <b>${fmt(totalPagado)}</b></span>
+        <span>Pendiente: <b style="color:${pendiente>0?'var(--ember)':'var(--ok)'}">${fmt(Math.max(pendiente,0))}</b></span>
+      </div>
+      <div class="table-scroll" style="margin-top:10px;">
+        <table><thead><tr><th>Nombre</th><th>Remera</th><th>Obligación</th><th>Pagado</th><th>Saldo</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table>
+      </div>
+    </details>`;
+  }).join('');
+}
+
+/* ============ CAJA <-> BANCO ============ */
+async function guardarSaldosIniciales(){
+  const saldoInicialCaja = Number(document.getElementById('cfg-caja-inicial').value)||0;
+  const saldoInicialBanco = Number(document.getElementById('cfg-banco-inicial').value)||0;
+  await apiPost('updateConfig', { data: { saldoInicialCaja, saldoInicialBanco } });
+  alert('Saldos iniciales guardados');
+}
+async function agregarTransferencia(){
+  const fecha = document.getElementById('t-fecha').value || todayStr();
+  const tipo = document.getElementById('t-tipo').value;
+  const monto = Number(document.getElementById('t-monto').value);
+  const desc = document.getElementById('t-desc').value.trim();
+  if(!monto || monto<=0){ alert('Ingresá un monto válido'); return; }
+  await apiPost('addTransferencia', { data: { fecha, tipo, monto, desc } });
+  document.getElementById('t-monto').value=''; document.getElementById('t-desc').value='';
+}
+async function eliminarTransferencia(id){
+  if(!confirm('¿Eliminar esta transferencia?')) return;
+  await apiPost('deleteTransferencia', { id });
+}
+function renderTransferencias(){
+  const tbody = document.querySelector('#tabla-transferencias tbody');
+  const ordenadas = [...DATA.transferencias].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
+  if(!ordenadas.length){ tbody.innerHTML = `<tr><td colspan="4"><div class="empty">Sin transferencias registradas.</div></td></tr>`; return; }
+  tbody.innerHTML = ordenadas.map(t=>{
+    const label = t.tipo==='caja->banco' ? 'Caja → Banco' : 'Banco → Caja';
+    return `<tr><td data-label="Fecha">${t.fecha}</td><td data-label="Movimiento">${label}${t.desc? ' · '+t.desc:''}</td><td data-label="Monto" class="mono">${fmt(t.monto)}</td><td data-label="">
+      <button class="btn ghost sm" onclick="abrirEdicion('transferencia','${t.id}')">✏️ Editar</button>
+      <button class="btn danger" onclick="eliminarTransferencia('${t.id}')">Eliminar</button>
+    </td></tr>`;
+  }).join('');
+}
+
+/* ============ TEMAS DE COLOR ============ */
+const TEMAS = {
+  bosque:    { forest:'#1F4436', forestDk:'#153029', amber:'#D99A2B', amberDk:'#B87F1B', ember:'#C4562E', sageDk:'#7C9885', cream:'#FAF6EC' },
+  oceano:    { forest:'#0F4C5C', forestDk:'#0A3540', amber:'#3AAFB9', amberDk:'#2C8A93', ember:'#EF6461', sageDk:'#7FB3BE', cream:'#EEF7F8' },
+  purpura:   { forest:'#3F2E56', forestDk:'#2A1E3B', amber:'#C9A0DC', amberDk:'#A97BC4', ember:'#D9534F', sageDk:'#9E86B4', cream:'#F6F1FA' },
+  atardecer: { forest:'#7A2E3B', forestDk:'#571F29', amber:'#F2A34C', amberDk:'#D9821F', ember:'#E8546B', sageDk:'#C98A8F', cream:'#FFF3EC' },
+  esmeralda: { forest:'#0B5D4C', forestDk:'#083F34', amber:'#5FCBA6', amberDk:'#38A47F', ember:'#D9744F', sageDk:'#7FBCA9', cream:'#EFFAF6' }
+};
+function aplicarTema(nombre){
+  const t = TEMAS[nombre] || TEMAS.bosque;
+  const root = document.documentElement.style;
+  root.setProperty('--forest', t.forest);
+  root.setProperty('--forest-dk', t.forestDk);
+  root.setProperty('--amber', t.amber);
+  root.setProperty('--amber-dk', t.amberDk);
+  root.setProperty('--ember', t.ember);
+  root.setProperty('--sage-dk', t.sageDk);
+  root.setProperty('--cream', t.cream);
+  document.getElementById('cfg-tema').value = nombre;
+}
+async function guardarTema(){
+  const val = document.getElementById('cfg-tema').value;
+  await apiPost('updateConfig', { data: { temaColor: val } });
+  alert('Apariencia guardada para todos los administradores');
+}
+
+/* ============ LOGO ============ */
+let logoTemporal = null;
+function previsualizarLogo(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  if(file.size > 45000){
+    alert('La imagen pesa mucho para guardarla en la planilla. Elegí una versión más liviana (menos de ~30-40 KB).');
+    ev.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e=>{
+    logoTemporal = e.target.result;
+    document.getElementById('logo-preview-wrap').innerHTML = `<img src="${logoTemporal}" style="max-height:70px;border-radius:8px;">`;
+  };
+  reader.readAsDataURL(file);
+}
+async function guardarLogo(){
+  if(!logoTemporal){ alert('Elegí una imagen primero'); return; }
+  await apiPost('updateConfig', { data: { logoBase64: logoTemporal } });
+  alert('Logo guardado');
+}
+async function quitarLogo(){
+  if(!confirm('¿Quitar el logo del campamento?')) return;
+  logoTemporal = null;
+  document.getElementById('logo-preview-wrap').innerHTML = '';
+  document.getElementById('cfg-logo-input').value = '';
+  await apiPost('updateConfig', { data: { logoBase64: '' } });
+}
+function logoHtml(){
+  return DATA.config.logoBase64 ? `<img src="${DATA.config.logoBase64}" style="max-height:56px;display:block;margin:0 auto 12px;">` : '';
+}
+async function guardarValoresEstandar(){
+  const cuotaEstandar = Number(document.getElementById('cfg-cuota-estandar').value)||0;
+  const remeraEstandar = Number(document.getElementById('cfg-remera-estandar').value)||0;
+  await apiPost('updateConfig', { data: { cuotaEstandar, remeraEstandar } });
+  alert('Valores estándar actualizados');
+}
+async function guardarFlyer(){
+  const data = {
+    fechaCampamento: document.getElementById('cfg-fecha-camp').value.trim(),
+    lugarCampamento: document.getElementById('cfg-lugar-camp').value.trim(),
+    organiza: document.getElementById('cfg-organiza').value.trim(),
+    instagramLink: document.getElementById('cfg-instagram').value.trim(),
+    versiculo: document.getElementById('cfg-versiculo').value.trim(),
+    citaBiblica: document.getElementById('cfg-cita').value.trim(),
+    costoInfo: document.getElementById('cfg-costo-info').value.trim()
+  };
+  await apiPost('updateConfig', { data });
+  alert('Datos del flyer actualizados');
+}
+async function agregarItem(tipo){
+  const inputId = tipo==='ingreso' ? 'cfg-item-ingreso' : 'cfg-item-gasto';
+  const val = document.getElementById(inputId).value.trim();
+  if(!val) return;
+  const key = tipo==='ingreso' ? 'itemsIngreso' : 'itemsGasto';
+  const arr = [...(DATA.config[key]||[])];
+  if(!arr.includes(val)) arr.push(val);
+  await apiPost('updateConfig', { data: { [key]: arr } });
+  document.getElementById(inputId).value='';
+}
+async function eliminarItem(tipo, val){
+  const key = tipo==='ingreso' ? 'itemsIngreso' : 'itemsGasto';
+  const arr = (DATA.config[key]||[]).filter(x=>x!==val);
+  await apiPost('updateConfig', { data: { [key]: arr } });
+}
+function renderItems(){
+  const itemRow = (it, tipo) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px;">${it}<button class="btn danger sm" onclick="eliminarItem('${tipo}','${String(it).replace(/'/g,"\\'")}')">Quitar</button></div>`;
+  document.getElementById('lista-items-ingreso').innerHTML = (DATA.config.itemsIngreso||[]).map(it=>itemRow(it,'ingreso')).join('') || '<div class="empty">Sin items.</div>';
+  document.getElementById('lista-items-gasto').innerHTML = (DATA.config.itemsGasto||[]).map(it=>itemRow(it,'gasto')).join('') || '<div class="empty">Sin items.</div>';
+}
+
+/* ============ RESUMEN GENERAL ============ */
+function calcularSaldos(){
+  let caja = Number(DATA.config.saldoInicialCaja)||0;
+  let banco = Number(DATA.config.saldoInicialBanco)||0;
+  DATA.movimientos.forEach(m=>{
+    const signo = m.tipo==='ingreso' ? 1 : -1;
+    caja += signo*Number(m.montoEfectivo||0);
+    banco += signo*Number(m.montoBanco||0);
+  });
+  DATA.transferencias.forEach(t=>{
+    if(t.tipo==='caja->banco'){ caja -= Number(t.monto); banco += Number(t.monto); }
+    else { banco -= Number(t.monto); caja += Number(t.monto); }
+  });
+  return {caja, banco};
+}
+function renderResumen(){
+  document.getElementById('resumen-logo').innerHTML = logoHtml();
+  const totalIngresos = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.monto),0);
+  const totalGastos = DATA.movimientos.filter(m=>m.tipo==='gasto').reduce((s,m)=>s+Number(m.monto),0);
+  const totalObl = DATA.personas.reduce((s,p)=>s+obligacionTotal(p),0);
+  const totalPagadoObl = DATA.personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
+  const porCobrar = Math.max(totalObl - totalPagadoObl, 0);
+  const {caja, banco} = calcularSaldos();
+
+  document.getElementById('resumen-stats').innerHTML = `
+    <div class="stat"><div class="stat-label">Inscriptos</div><div class="stat-val">${DATA.personas.length}</div></div>
+    <div class="stat forest"><div class="stat-label">Total ingresos</div><div class="stat-val">${fmt(totalIngresos)}</div></div>
+    <div class="stat ember"><div class="stat-label">Total gastos</div><div class="stat-val">${fmt(totalGastos)}</div></div>
+    <div class="stat amber"><div class="stat-label">Por cobrar</div><div class="stat-val">${fmt(porCobrar)}</div></div>`;
+  document.getElementById('resumen-saldos').innerHTML = `
+    <div class="stat forest"><div class="stat-label">Saldo en Caja</div><div class="stat-val">${fmt(caja)}</div></div>
+    <div class="stat forest"><div class="stat-label">Saldo en Banco</div><div class="stat-val">${fmt(banco)}</div></div>
+    <div class="stat"><div class="stat-label">Saldo total</div><div class="stat-val">${fmt(caja+banco)}</div></div>`;
+  const tbody = document.querySelector('#tabla-resumen-iglesias tbody');
+  if(!DATA.iglesias.length){ tbody.innerHTML = `<tr><td colspan="5"><div class="empty">Sin iglesias registradas.</div></td></tr>`; }
+  else{
+    tbody.innerHTML = DATA.iglesias.map(ig=>{
+      const personas = DATA.personas.filter(p=>p.iglesiaId===ig.id);
+      const tc = personas.reduce((s,p)=>s+obligacionTotal(p),0);
+      const tp = personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
+      return `<tr><td data-label="Iglesia"><span class="tag church">${ig.nombre}</span></td><td data-label="Inscriptos">${personas.length}</td><td data-label="Total obligación" class="mono">${fmt(tc)}</td><td data-label="Pagado" class="mono">${fmt(tp)}</td><td data-label="Pendiente" class="mono">${fmt(Math.max(tc-tp,0))}</td></tr>`;
+    }).join('');
+  }
+}
+
+/* ============ EXPORTAR IMAGEN (JPG) ============ */
+function exportarImagen(elementId, titulo){
+  const el = document.getElementById(elementId);
+  if(!el){ alert('No se encontró la sección a exportar'); return; }
+  html2canvas(el, {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
+    const link = document.createElement('a');
+    link.download = titulo.replace(/\s+/g,'_') + '.jpg';
+    link.href = canvas.toDataURL('image/jpeg', 0.92);
+    link.click();
+  });
+}
+
+/* ============ PDF EXPORT ============ */
+function exportarPDF(elementId, titulo){
+  const el = document.getElementById(elementId);
+  if(!el){ alert('No se encontró la sección a exportar'); return; }
+  html2canvas(el, {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','pt','a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pageWidth - 60;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    pdf.setFontSize(14);
+    pdf.text(titulo, 30, 34);
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 30, 50, imgWidth, imgHeight);
+    pdf.save(titulo.replace(/\s+/g,'_')+'.pdf');
+  });
+}
+
+/* ============ RENDER ALL ============ */
+function renderAll(){
+  document.getElementById('cfg-cuota-estandar').value = DATA.config.cuotaEstandar||260000;
+  document.getElementById('cfg-remera-estandar').value = DATA.config.remeraEstandar||85000;
+  document.getElementById('cfg-caja-inicial').value = DATA.config.saldoInicialCaja||0;
+  document.getElementById('cfg-banco-inicial').value = DATA.config.saldoInicialBanco||0;
+  document.getElementById('cfg-fecha-camp').value = DATA.config.fechaCampamento||'';
+  document.getElementById('cfg-lugar-camp').value = DATA.config.lugarCampamento||'';
+  document.getElementById('cfg-organiza').value = DATA.config.organiza||'';
+  document.getElementById('cfg-instagram').value = DATA.config.instagramLink||'';
+  document.getElementById('cfg-versiculo').value = DATA.config.versiculo||'';
+  document.getElementById('cfg-cita').value = DATA.config.citaBiblica||'';
+  document.getElementById('cfg-costo-info').value = DATA.config.costoInfo||'';
+  document.getElementById('i-cuota').value = DATA.config.cuotaEstandar||260000;
+  document.getElementById('i-costo-remera').value = DATA.config.remeraEstandar||85000;
+  if(!document.getElementById('m-fecha').value) document.getElementById('m-fecha').value = todayStr();
+  if(!document.getElementById('t-fecha').value) document.getElementById('t-fecha').value = todayStr();
+
+  renderSelectIglesias();
+  renderSelectIglesiasEstado();
+  renderSelectPersonas();
+  renderSelectItemsMov();
+  renderInscripciones();
+  renderMovimientos();
+  renderReporteIglesias();
+  renderEstadoIglesia();
+  renderTransferencias();
+  renderItems();
+  renderResumen();
+  renderEstadoPersona();
+  if(DATA.config.temaColor) aplicarTema(DATA.config.temaColor);
+}
+
+document.getElementById('m-monto-efectivo').addEventListener('input', actualizarPreviewTotal);
+document.getElementById('m-monto-banco').addEventListener('input', actualizarPreviewTotal);
+</script>
+</body>
+</html>
