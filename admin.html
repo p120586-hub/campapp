@@ -187,8 +187,21 @@ tr:last-child td{border-bottom:none;}
     <div id="resumen-logo" style="text-align:center;"></div>
     <div class="stats" id="resumen-stats"></div>
     <div class="card">
-      <h2>💰 Saldo por medio de pago</h2>
-      <div class="stats" id="resumen-saldos"></div>
+      <h2>📊 Ingresos y gastos por concepto</h2>
+      <div class="two-col">
+        <div>
+          <p class="small-note" style="margin-top:0;font-weight:700;color:var(--ok);">Ingresos</p>
+          <div class="table-scroll">
+            <table id="tabla-concepto-ingresos"><thead><tr><th>Concepto</th><th>Total</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <div>
+          <p class="small-note" style="margin-top:0;font-weight:700;color:var(--ember);">Gastos</p>
+          <div class="table-scroll">
+            <table id="tabla-concepto-gastos"><thead><tr><th>Concepto</th><th>Total</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="card">
       <h2>⛪ Deuda por iglesia</h2>
@@ -198,6 +211,10 @@ tr:last-child td{border-bottom:none;}
           <tbody></tbody>
         </table>
       </div>
+    </div>
+    <div class="card">
+      <h2>💰 Saldo por medio de pago</h2>
+      <div class="stats" id="resumen-saldos"></div>
     </div>
     <div class="row-actions">
       <button class="btn amber" onclick="exportarPDF('panel-resumen','Resumen General - CampApp')">📄 Exportar (PDF)</button>
@@ -212,7 +229,9 @@ tr:last-child td{border-bottom:none;}
         <div class="field"><label>Nombre completo</label><input type="text" id="i-nombre"></div>
         <div class="field"><label>Cédula de identidad</label><input type="text" id="i-cedula"></div>
         <div class="field"><label>Edad</label><input type="number" id="i-edad" min="0"></div>
-        <div class="field"><label>Iglesia</label><select id="i-iglesia"></select></div>
+        <div class="field"><label>Tipo</label><select id="i-tipo" onchange="actualizarCostoRemeraDefault()"><option value="acampante" selected>Acampante</option><option value="staff">Staff</option></select></div>
+        <div class="field"><label>Iglesia</label><select id="i-iglesia" onchange="toggleIglesiaOtroAdmin()"></select></div>
+        <div class="field" id="i-iglesia-otro-wrap" style="display:none;"><label>Nombre de la iglesia</label><input type="text" id="i-iglesia-otro" placeholder="Escribí el nombre"></div>
         <div class="field"><label>Pastor / líder</label><input type="text" id="i-pastor"></div>
         <div class="field"><label>Teléfono (opcional)</label><input type="tel" id="i-telefono"></div>
         <div class="field"><label>Cuota campamento (Gs.)</label><input type="number" id="i-cuota" step="1000"></div>
@@ -233,7 +252,7 @@ tr:last-child td{border-bottom:none;}
       <div class="field" style="max-width:280px;"><input type="text" id="buscar-inscripto" placeholder="Buscar por nombre o iglesia..." oninput="renderInscripciones()"></div>
       <div class="table-scroll">
         <table id="tabla-inscripciones">
-          <thead><tr><th>Nombre</th><th>Cédula</th><th>Edad</th><th>Iglesia</th><th>Pastor/líder</th><th>Remera</th><th>Descuento</th><th>Obligación</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Cédula</th><th>Edad</th><th>Tipo</th><th>Iglesia</th><th>Pastor/líder</th><th>Remera</th><th>Descuento</th><th>Obligación</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -371,7 +390,8 @@ tr:last-child td{border-bottom:none;}
       <h2>⚙️ Valores estándar</h2>
       <div class="two-col">
         <div class="field"><label>Cuota campamento estándar (Gs.)</label><input type="number" id="cfg-cuota-estandar" step="1000"></div>
-        <div class="field"><label>Costo remera estándar (Gs.)</label><input type="number" id="cfg-remera-estandar" step="1000"></div>
+        <div class="field"><label>Costo remera Acampante (Gs.)</label><input type="number" id="cfg-remera-estandar" step="1000"></div>
+        <div class="field"><label>Costo remera Staff (Gs.)</label><input type="number" id="cfg-remera-staff" step="1000"></div>
       </div>
       <button class="btn" id="btn-valores" onclick="guardarValoresEstandar()">Guardar valores</button>
       <p class="small-note">Se aplican a las nuevas inscripciones (públicas y por administrador). Cada inscripto puede tener montos distintos editando su fila.</p>
@@ -570,8 +590,9 @@ function abrirEdicion(tipo, id){
       <div class="field"><label>Cédula</label><input type="text" id="edit-cedula" value="${escAttr(p.cedula)}"></div>
       <div class="two-col">
         <div class="field"><label>Edad</label><input type="number" id="edit-edad" value="${p.edad||''}"></div>
-        <div class="field"><label>Teléfono</label><input type="tel" id="edit-telefono" value="${escAttr(p.telefono)}"></div>
+        <div class="field"><label>Tipo</label><select id="edit-tipo"><option value="acampante" ${p.tipo!=='staff'?'selected':''}>Acampante</option><option value="staff" ${p.tipo==='staff'?'selected':''}>Staff</option></select></div>
       </div>
+      <div class="field"><label>Teléfono</label><input type="tel" id="edit-telefono" value="${escAttr(p.telefono)}"></div>
       <div class="field"><label>Iglesia</label><select id="edit-iglesia">${DATA.iglesias.map(i=>`<option value="${i.id}" ${i.id===p.iglesiaId?'selected':''}>${i.nombre}</option>`).join('')}</select></div>
       <div class="field"><label>Pastor/líder</label><input type="text" id="edit-pastor" value="${escAttr(p.pastor)}"></div>
       <div class="two-col">
@@ -633,6 +654,7 @@ async function guardarEdicionModal(){
       nombre: document.getElementById('edit-nombre').value.trim(),
       cedula: document.getElementById('edit-cedula').value.trim(),
       edad: document.getElementById('edit-edad').value,
+      tipo: document.getElementById('edit-tipo').value,
       telefono: document.getElementById('edit-telefono').value.trim(),
       iglesiaId: document.getElementById('edit-iglesia').value,
       pastor: document.getElementById('edit-pastor').value.trim(),
@@ -685,18 +707,31 @@ async function eliminarIglesia(id){
 function iglesiaNombre(id){ const i = DATA.iglesias.find(x=>x.id===id); return i? i.nombre : '—'; }
 function renderSelectIglesias(){
   const sel = document.getElementById('i-iglesia');
-  sel.innerHTML = DATA.iglesias.map(i=>`<option value="${i.id}">${i.nombre}</option>`).join('') || '<option value="">Agregá una iglesia primero</option>';
+  const opts = DATA.iglesias.map(i=>`<option value="${i.id}">${i.nombre}</option>`).join('');
+  sel.innerHTML = opts + '<option value="__otros__">Otra (especificar)</option>';
+}
+function toggleIglesiaOtroAdmin(){
+  document.getElementById('i-iglesia-otro-wrap').style.display = document.getElementById('i-iglesia').value === '__otros__' ? 'block' : 'none';
+}
+function actualizarCostoRemeraDefault(){
+  const tipo = document.getElementById('i-tipo').value;
+  const val = tipo === 'staff' ? (DATA.config.remeraEstandarStaff||75000) : (DATA.config.remeraEstandar||85000);
+  document.getElementById('i-costo-remera').value = val;
 }
 
 /* ============ PERSONAS ============ */
 function toggleRemeraCampos(){
-  document.getElementById('i-remera-campos').style.display = document.getElementById('i-remera').checked ? 'grid' : 'none';
+  const checked = document.getElementById('i-remera').checked;
+  document.getElementById('i-remera-campos').style.display = checked ? 'grid' : 'none';
+  if(checked) actualizarCostoRemeraDefault();
 }
 async function agregarInscripto(){
   const nombre = document.getElementById('i-nombre').value.trim();
   const cedula = document.getElementById('i-cedula').value.trim();
   const edad = document.getElementById('i-edad').value;
-  const iglesiaId = document.getElementById('i-iglesia').value;
+  const tipo = document.getElementById('i-tipo').value;
+  let iglesiaId = document.getElementById('i-iglesia').value;
+  const iglesiaOtroNombre = document.getElementById('i-iglesia-otro').value.trim();
   const pastor = document.getElementById('i-pastor').value.trim();
   const telefono = document.getElementById('i-telefono').value.trim();
   let cuota = document.getElementById('i-cuota').value;
@@ -705,12 +740,19 @@ async function agregarInscripto(){
   const quiereRemera = document.getElementById('i-remera').checked;
   const tallaRemera = document.getElementById('i-talla').value;
   let costoRemera = document.getElementById('i-costo-remera').value;
-  costoRemera = costoRemera === '' ? (DATA.config.remeraEstandar||85000) : Number(costoRemera);
+  const remeraDefault = tipo === 'staff' ? (DATA.config.remeraEstandarStaff||75000) : (DATA.config.remeraEstandar||85000);
+  costoRemera = costoRemera === '' ? remeraDefault : Number(costoRemera);
 
   if(!nombre){ alert('Ingresá el nombre'); return; }
   if(!iglesiaId){ alert('Seleccioná una iglesia'); return; }
+  if(iglesiaId === '__otros__' && !iglesiaOtroNombre){ alert('Escribí el nombre de la iglesia'); return; }
 
-  await apiPost('addPersona', { data: { nombre, cedula, edad, iglesiaId, pastor, telefono, cuotaCampamento: cuota, quiereRemera, tallaRemera, costoRemera, descuento } });
+  if(iglesiaId === '__otros__'){
+    const nuevaIglesia = await apiPost('addIglesia', { data: { nombre: iglesiaOtroNombre } });
+    iglesiaId = nuevaIglesia.id;
+  }
+
+  await apiPost('addPersona', { data: { nombre, cedula, edad, tipo, iglesiaId, pastor, telefono, cuotaCampamento: cuota, quiereRemera, tallaRemera, costoRemera, descuento } });
 
   document.getElementById('i-nombre').value='';
   document.getElementById('i-cedula').value='';
@@ -718,6 +760,9 @@ async function agregarInscripto(){
   document.getElementById('i-descuento').value='0';
   document.getElementById('i-pastor').value='';
   document.getElementById('i-telefono').value='';
+  document.getElementById('i-tipo').value='acampante';
+  document.getElementById('i-iglesia-otro').value='';
+  document.getElementById('i-iglesia-otro-wrap').style.display='none';
   document.getElementById('i-cuota').value = DATA.config.cuotaEstandar||260000;
   document.getElementById('i-remera').checked = false;
   document.getElementById('i-costo-remera').value = DATA.config.remeraEstandar||85000;
@@ -741,17 +786,19 @@ function renderInscripciones(){
     return (p.nombre||'').toLowerCase().includes(q) || ig.includes(q);
   });
   document.getElementById('count-inscriptos').textContent = DATA.personas.length;
-  if(!filtradas.length){ tbody.innerHTML = `<tr><td colspan="12"><div class="empty">Todavía no hay inscriptos que coincidan.</div></td></tr>`; return; }
+  if(!filtradas.length){ tbody.innerHTML = `<tr><td colspan="13"><div class="empty">Todavía no hay inscriptos que coincidan.</div></td></tr>`; return; }
   tbody.innerHTML = filtradas.map(p=>{
     const pagado = pagadoPorPersona(p.id);
     const obligacion = obligacionTotal(p);
     const saldo = obligacion - pagado;
     const estado = saldo<=0 ? '<span class="tag ok">Al día</span>' : '<span class="tag pending">Pendiente</span>';
     const remera = esRemera(p) ? `<span class="tag shirt">Sí · ${p.tallaRemera}</span>` : 'No';
+    const tipoTag = p.tipo==='staff' ? '<span class="tag church">Staff</span>' : '<span class="tag ok">Acampante</span>';
     return `<tr>
       <td data-label="Nombre"><b>${p.nombre}</b></td>
       <td data-label="Cédula">${p.cedula||'—'}</td>
       <td data-label="Edad">${p.edad||'—'}</td>
+      <td data-label="Tipo">${tipoTag}</td>
       <td data-label="Iglesia">${iglesiaNombre(p.iglesiaId)}</td>
       <td data-label="Pastor/líder">${p.pastor||'—'}</td>
       <td data-label="Remera">${remera}</td>
@@ -1022,34 +1069,29 @@ function renderEstadoIglesia(){
 function renderReporteIglesias(){
   const cont = document.getElementById('lista-iglesias-detalle');
   if(!DATA.iglesias.length){ cont.innerHTML = '<div class="empty">Todavía no hay iglesias registradas.</div>'; return; }
-  cont.innerHTML = DATA.iglesias.map(ig=>{
+  const filas = DATA.iglesias.map(ig=>{
     const personas = DATA.personas.filter(p=>p.iglesiaId===ig.id);
     const totalObl = personas.reduce((s,p)=>s+obligacionTotal(p),0);
     const totalPagado = personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
-    const pendiente = totalObl - totalPagado;
-    const filas = personas.map(p=>{
-      const pagado = pagadoPorPersona(p.id);
-      const obligacion = obligacionTotal(p);
-      const saldo = obligacion - pagado;
-      const estado = saldo<=0? '<span class="tag ok">Al día</span>' : '<span class="tag pending">Pendiente</span>';
-      return `<tr><td data-label="Nombre">${p.nombre}</td><td data-label="Remera">${esRemera(p)? p.tallaRemera : 'No'}</td><td data-label="Obligación" class="mono">${fmt(obligacion)}</td><td data-label="Pagado" class="mono">${fmt(pagado)}</td><td data-label="Saldo" class="mono">${fmt(Math.max(saldo,0))}</td><td data-label="Estado">${estado}</td></tr>`;
-    }).join('') || '<tr><td colspan="6"><div class="empty">Sin inscriptos en esta iglesia.</div></td></tr>';
-    return `<details class="church-card">
-      <summary>${ig.nombre} <span>
-        <button class="btn ghost sm" onclick="event.preventDefault();event.stopPropagation();abrirEdicion('iglesia','${ig.id}')">✏️ Editar</button>
-        <button class="btn danger sm" onclick="event.preventDefault();event.stopPropagation();eliminarIglesia('${ig.id}')">Eliminar</button>
-      </span></summary>
-      <div class="church-mini-stats">
-        <span>Inscriptos: <b>${personas.length}</b></span>
-        <span>Obligación total: <b>${fmt(totalObl)}</b></span>
-        <span>Pagado: <b>${fmt(totalPagado)}</b></span>
-        <span>Pendiente: <b style="color:${pendiente>0?'var(--ember)':'var(--ok)'}">${fmt(Math.max(pendiente,0))}</b></span>
-      </div>
-      <div class="table-scroll" style="margin-top:10px;">
-        <table><thead><tr><th>Nombre</th><th>Remera</th><th>Obligación</th><th>Pagado</th><th>Saldo</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table>
-      </div>
-    </details>`;
+    const pendiente = Math.max(totalObl - totalPagado, 0);
+    const estado = pendiente<=0 ? '<span class="tag ok">Al día</span>' : '<span class="tag pending">Pendiente</span>';
+    return `<tr>
+      <td data-label="Iglesia"><span class="tag church">${ig.nombre}</span></td>
+      <td data-label="Inscriptos">${personas.length}</td>
+      <td data-label="Obligación" class="mono">${fmt(totalObl)}</td>
+      <td data-label="Pagado" class="mono">${fmt(totalPagado)}</td>
+      <td data-label="Pendiente" class="mono">${fmt(pendiente)}</td>
+      <td data-label="Estado">${estado}</td>
+      <td data-label="">
+        <button class="btn ghost sm" onclick="abrirEdicion('iglesia','${ig.id}')">✏️ Editar</button>
+        <button class="btn danger sm" onclick="eliminarIglesia('${ig.id}')">Eliminar</button>
+      </td>
+    </tr>`;
   }).join('');
+  cont.innerHTML = `<div class="table-scroll"><table>
+    <thead><tr><th>Iglesia</th><th>Inscriptos</th><th>Obligación</th><th>Pagado</th><th>Pendiente</th><th>Estado</th><th></th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table></div>`;
 }
 
 /* ============ CAJA <-> BANCO ============ */
@@ -1146,7 +1188,8 @@ function logoHtml(){
 async function guardarValoresEstandar(){
   const cuotaEstandar = Number(document.getElementById('cfg-cuota-estandar').value)||0;
   const remeraEstandar = Number(document.getElementById('cfg-remera-estandar').value)||0;
-  await apiPost('updateConfig', { data: { cuotaEstandar, remeraEstandar } });
+  const remeraEstandarStaff = Number(document.getElementById('cfg-remera-staff').value)||0;
+  await apiPost('updateConfig', { data: { cuotaEstandar, remeraEstandar, remeraEstandarStaff } });
   alert('Valores estándar actualizados');
 }
 async function guardarFlyer(){
@@ -1217,15 +1260,36 @@ function renderResumen(){
     <div class="stat forest"><div class="stat-label">Saldo en Banco</div><div class="stat-val">${fmt(banco)}</div></div>
     <div class="stat"><div class="stat-label">Saldo total</div><div class="stat-val">${fmt(caja+banco)}</div></div>`;
   const tbody = document.querySelector('#tabla-resumen-iglesias tbody');
-  if(!DATA.iglesias.length){ tbody.innerHTML = `<tr><td colspan="5"><div class="empty">Sin iglesias registradas.</div></td></tr>`; }
+  const iglesiasConMovimiento = DATA.iglesias.filter(ig=> DATA.personas.some(p=>p.iglesiaId===ig.id));
+  if(!iglesiasConMovimiento.length){ tbody.innerHTML = `<tr><td colspan="5"><div class="empty">Sin iglesias con inscriptos todavía.</div></td></tr>`; }
   else{
-    tbody.innerHTML = DATA.iglesias.map(ig=>{
+    tbody.innerHTML = iglesiasConMovimiento.map(ig=>{
       const personas = DATA.personas.filter(p=>p.iglesiaId===ig.id);
       const tc = personas.reduce((s,p)=>s+obligacionTotal(p),0);
       const tp = personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
       return `<tr><td data-label="Iglesia"><span class="tag church">${ig.nombre}</span></td><td data-label="Inscriptos">${personas.length}</td><td data-label="Total obligación" class="mono">${fmt(tc)}</td><td data-label="Pagado" class="mono">${fmt(tp)}</td><td data-label="Pendiente" class="mono">${fmt(Math.max(tc-tp,0))}</td></tr>`;
     }).join('');
   }
+  renderConceptos();
+}
+function renderConceptos(){
+  const porConcepto = (tipoMov)=>{
+    const map = {};
+    DATA.movimientos.filter(m=>m.tipo===tipoMov).forEach(m=>{
+      map[m.item] = (map[m.item]||0) + Number(m.monto);
+    });
+    return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  };
+  const ingresos = porConcepto('ingreso');
+  const gastos = porConcepto('gasto');
+  const tbodyIn = document.querySelector('#tabla-concepto-ingresos tbody');
+  const tbodyGa = document.querySelector('#tabla-concepto-gastos tbody');
+  tbodyIn.innerHTML = ingresos.length
+    ? ingresos.map(([item,total])=>`<tr><td data-label="Concepto">${item}</td><td data-label="Total" class="mono amt-in">${fmt(total)}</td></tr>`).join('')
+    : '<tr><td colspan="2"><div class="empty">Sin ingresos todavía.</div></td></tr>';
+  tbodyGa.innerHTML = gastos.length
+    ? gastos.map(([item,total])=>`<tr><td data-label="Concepto">${item}</td><td data-label="Total" class="mono amt-out">${fmt(total)}</td></tr>`).join('')
+    : '<tr><td colspan="2"><div class="empty">Sin gastos todavía.</div></td></tr>';
 }
 
 /* ============ EXPORTAR IMAGEN (JPG) ============ */
@@ -1261,6 +1325,7 @@ function exportarPDF(elementId, titulo){
 function renderAll(){
   document.getElementById('cfg-cuota-estandar').value = DATA.config.cuotaEstandar||260000;
   document.getElementById('cfg-remera-estandar').value = DATA.config.remeraEstandar||85000;
+  document.getElementById('cfg-remera-staff').value = DATA.config.remeraEstandarStaff||75000;
   document.getElementById('cfg-caja-inicial').value = DATA.config.saldoInicialCaja||0;
   document.getElementById('cfg-banco-inicial').value = DATA.config.saldoInicialBanco||0;
   document.getElementById('cfg-fecha-camp').value = DATA.config.fechaCampamento||'';

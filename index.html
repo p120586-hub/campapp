@@ -117,7 +117,9 @@ input:focus,select:focus{outline:2px solid var(--amber);outline-offset:1px;borde
       <div class="field"><label>Edad</label><input type="number" id="f-edad" min="0" placeholder="Ej: 17"></div>
     </div>
     <div class="field"><label>Teléfono</label><input type="tel" id="f-telefono" placeholder="09xx xxx xxx"></div>
-    <div class="field"><label>Iglesia</label><select id="f-iglesia"><option value="">Cargando iglesias...</option></select></div>
+    <div class="field"><label>Me inscribo como</label><select id="f-tipo"><option value="acampante" selected>Acampante</option><option value="staff">Staff</option></select></div>
+    <div class="field"><label>Iglesia</label><select id="f-iglesia" onchange="toggleIglesiaOtro()"><option value="">Cargando iglesias...</option></select></div>
+    <div class="field" id="f-iglesia-otro-wrap" style="display:none;"><label>Nombre de tu iglesia</label><input type="text" id="f-iglesia-otro" placeholder="Escribí el nombre de tu iglesia"></div>
     <div class="field"><label>Nombre de tu pastor o líder</label><input type="text" id="f-pastor" placeholder="Ej: Pastor Juan Pérez"></div>
 
     <div class="checkbox-row">
@@ -192,12 +194,11 @@ async function cargarInfoPublica(){
 
 function renderIglesias(){
   const sel = document.getElementById('f-iglesia');
-  if(!IGLESIAS.length){
-    sel.innerHTML = '<option value="">Todavía no hay iglesias cargadas</option>';
-    return;
-  }
-  sel.innerHTML = '<option value="">Seleccioná tu iglesia...</option>' +
-    IGLESIAS.map(i=>`<option value="${i.id}">${i.nombre}</option>`).join('');
+  const opts = IGLESIAS.map(i=>`<option value="${i.id}">${i.nombre}</option>`).join('');
+  sel.innerHTML = (IGLESIAS.length ? '<option value="">Seleccioná tu iglesia...</option>' + opts : '<option value="">Seleccioná...</option>') + '<option value="__otros__">Otra (no está en la lista)</option>';
+}
+function toggleIglesiaOtro(){
+  document.getElementById('f-iglesia-otro-wrap').style.display = document.getElementById('f-iglesia').value === '__otros__' ? 'block' : 'none';
 }
 
 function aplicarConfigFlyer(){
@@ -213,12 +214,23 @@ function aplicarConfigFlyer(){
   if(CONFIG.instagramLink) document.getElementById('ig-link').href = CONFIG.instagramLink;
 }
 
+async function apiPost(action, payload){
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  return res.json();
+}
+
 async function enviarInscripcion(){
   const nombre = document.getElementById('f-nombre').value.trim();
   const cedula = document.getElementById('f-cedula').value.trim();
   const edad = document.getElementById('f-edad').value;
   const telefono = document.getElementById('f-telefono').value.trim();
-  const iglesiaId = document.getElementById('f-iglesia').value;
+  const tipo = document.getElementById('f-tipo').value;
+  let iglesiaId = document.getElementById('f-iglesia').value;
+  const iglesiaOtroNombre = document.getElementById('f-iglesia-otro').value.trim();
   const pastor = document.getElementById('f-pastor').value.trim();
   const quiereRemera = document.getElementById('f-remera').checked;
   const tallaRemera = quiereRemera ? document.getElementById('f-talla').value : '';
@@ -230,23 +242,30 @@ async function enviarInscripcion(){
     errEl.style.display = 'block';
     return;
   }
+  if(iglesiaId === '__otros__' && !iglesiaOtroNombre){
+    errEl.textContent = 'Escribí el nombre de tu iglesia.';
+    errEl.style.display = 'block';
+    return;
+  }
 
   const btn = document.getElementById('btn-enviar');
   btn.disabled = true; btn.textContent = 'Enviando...';
 
-  const data = {
-    nombre, cedula, edad, iglesiaId, pastor, telefono,
-    cuotaCampamento: CONFIG.cuotaEstandar || 260000,
-    quiereRemera, tallaRemera,
-    costoRemera: CONFIG.remeraEstandar || 85000
-  };
-
   try{
-    await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'addPersona', data })
-    });
+    if(iglesiaId === '__otros__'){
+      const nuevaIglesia = await apiPost('addIglesia', { data: { nombre: iglesiaOtroNombre } });
+      iglesiaId = nuevaIglesia.id;
+    }
+
+    const costoRemera = tipo === 'staff' ? (CONFIG.remeraEstandarStaff || 75000) : (CONFIG.remeraEstandar || 85000);
+    const data = {
+      nombre, cedula, edad, tipo, iglesiaId, pastor, telefono,
+      cuotaCampamento: CONFIG.cuotaEstandar || 260000,
+      quiereRemera, tallaRemera,
+      costoRemera
+    };
+    await apiPost('addPersona', { data });
+
     document.getElementById('success-nombre').textContent = nombre;
     document.getElementById('form-card').style.display = 'none';
     document.getElementById('success-card').style.display = 'block';
