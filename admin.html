@@ -1297,11 +1297,11 @@ function renderResumen(){
 
   const totalIngresos = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.monto),0);
   const totalGastos = DATA.movimientos.filter(m=>m.tipo==='gasto').reduce((s,m)=>s+Number(m.monto),0);
-  const resultadoNeto = totalIngresos - totalGastos;
   const totalObl = DATA.personas.reduce((s,p)=>s+obligacionTotal(p),0);
   const totalPagadoObl = DATA.personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
   const porCobrar = Math.max(totalObl - totalPagadoObl, 0);
   const {caja, banco} = calcularSaldos();
+  const resultadoNeto = caja + banco;
   const totalIngresoEfectivo = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.montoEfectivo||0),0);
   const totalIngresoBanco = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.montoBanco||0),0);
 
