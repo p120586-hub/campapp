@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CampApp — Administración</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@400;500;600;700&family=Quicksand:wght@500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -14,14 +14,16 @@
   --cream:#FAF6EC; --paper:#FFFFFF; --forest:#1F4436; --forest-dk:#153029;
   --amber:#D99A2B; --amber-dk:#B87F1B; --ember:#C4562E; --sage:#B9C9B6; --sage-dk:#7C9885;
   --ink:#22271F; --ink-soft:#5B6259; --line:#E3DDCB; --ok:#3E7D5A; --radius:14px;
+  --font-heading: 'Fraunces', serif;
+  --font-body: 'Work Sans', sans-serif;
 }
 *{box-sizing:border-box;}
-html,body{margin:0;background:var(--cream);color:var(--ink);font-family:'Work Sans',sans-serif;color-scheme:light;}
+html,body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--font-body);color-scheme:light;}
 body{background:var(--cream) !important;}
-h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;margin:0;color:var(--forest-dk);}
+h1,h2,h3{font-family:var(--font-heading);font-weight:600;margin:0;color:var(--forest-dk);}
 .mono{font-family:'JetBrains Mono',monospace;}
-button{font-family:'Work Sans',sans-serif;cursor:pointer;}
-input,select{font-family:'Work Sans',sans-serif;}
+button{font-family:var(--font-body);cursor:pointer;}
+input,select{font-family:var(--font-body);}
 
 /* LOGIN GATE */
 #gate{position:fixed;inset:0;background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dk) 65%);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;}
@@ -34,7 +36,7 @@ input,select{font-family:'Work Sans',sans-serif;}
 
 .camp-card{background:#fff;border-radius:14px;padding:18px 16px;margin-bottom:12px;text-align:left;width:100%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .camp-card:hover{background:var(--cream);}
-.camp-card .cc-name{font-family:'Fraunces',serif;font-weight:700;font-size:17px;color:var(--forest-dk);}
+.camp-card .cc-name{font-family:var(--font-heading);font-weight:700;font-size:17px;color:var(--forest-dk);}
 .camp-card .cc-arrow{font-size:20px;color:var(--amber-dk);}
 
 .hero{background:linear-gradient(155deg,var(--forest) 0%, var(--forest-dk) 65%);color:#fff;padding:24px 20px 18px;position:relative;overflow:hidden;}
@@ -110,7 +112,7 @@ tr:last-child td{border-bottom:none;}
 .divider{height:1px;background:var(--line);margin:16px 0;}
 .small-note{font-size:12px;color:var(--ink-soft);margin-top:6px;}
 .church-card{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;}
-.church-card summary{cursor:pointer;font-weight:600;font-family:'Fraunces',serif;font-size:16px;color:var(--forest-dk);display:flex;justify-content:space-between;align-items:center;}
+.church-card summary{cursor:pointer;font-weight:600;font-family:var(--font-heading);font-size:16px;color:var(--forest-dk);display:flex;justify-content:space-between;align-items:center;}
 .church-mini-stats{display:flex;gap:16px;font-size:12.5px;color:var(--ink-soft);margin-top:4px;flex-wrap:wrap;}
 .church-mini-stats b{color:var(--ink);}
 .split-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -184,8 +186,23 @@ tr:last-child td{border-bottom:none;}
 <div class="wrap">
 
   <div class="panel active" id="panel-resumen">
-    <div id="resumen-logo" style="text-align:center;"></div>
+    <div class="card" id="resumen-banner" style="padding:0;overflow:hidden;">
+      <div style="background:linear-gradient(120deg,var(--forest),var(--forest-dk));color:#fff;padding:20px 22px;display:flex;align-items:center;gap:14px;">
+        <div id="resumen-logo-banner" style="flex-shrink:0;"></div>
+        <div>
+          <h1 id="resumen-titulo" style="color:#fff;font-size:22px;">CAMPA AVIVADOS 2027</h1>
+          <p id="resumen-subtitulo" style="margin:2px 0 0;font-size:12.5px;color:#D9E4DB;"></p>
+        </div>
+      </div>
+      <div style="display:flex;height:5px;">
+        <div style="flex:1;background:var(--forest);"></div>
+        <div style="flex:1;background:var(--amber);"></div>
+        <div style="flex:1;background:var(--ember);"></div>
+      </div>
+    </div>
+
     <div class="stats" id="resumen-stats"></div>
+
     <div class="card">
       <h2>📊 Ingresos y gastos por concepto</h2>
       <div class="two-col">
@@ -203,19 +220,23 @@ tr:last-child td{border-bottom:none;}
         </div>
       </div>
     </div>
+
     <div class="card">
-      <h2>⛪ Deuda por iglesia</h2>
+      <h2>⛪ Seguimiento por iglesia</h2>
       <div class="table-scroll">
         <table id="tabla-resumen-iglesias">
-          <thead><tr><th>Iglesia</th><th>Inscriptos</th><th>Total obligación</th><th>Pagado</th><th>Pendiente</th></tr></thead>
+          <thead><tr><th>Iglesia</th><th>Inscriptos</th><th>Deuda total</th><th>Cobrado</th><th>Pendiente</th><th>Avance</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
-    <div class="card">
-      <h2>💰 Saldo por medio de pago</h2>
-      <div class="stats" id="resumen-saldos"></div>
+
+    <div class="card" style="border:1.5px solid var(--forest);">
+      <h2>💰 Resumen de caja y banco</h2>
+      <div class="stats" id="resumen-ingresos-medio"></div>
+      <div class="two-col" id="resumen-saldos" style="margin-top:6px;"></div>
     </div>
+
     <div class="row-actions">
       <button class="btn amber" onclick="exportarPDF('panel-resumen','Resumen General - CampApp')">📄 Exportar (PDF)</button>
       <button class="btn ghost" onclick="exportarImagen('panel-resumen','Resumen General - CampApp')">🖼️ Exportar (JPG)</button>
@@ -384,6 +405,15 @@ tr:last-child td{border-bottom:none;}
           <option value="esmeralda">💎 Esmeralda</option>
         </select>
       </div>
+      <div class="field" style="max-width:280px;">
+        <label>Tipografía</label>
+        <select id="cfg-fuente" onchange="aplicarFuente(this.value)">
+          <option value="clasica">Clásica (Fraunces + Work Sans)</option>
+          <option value="moderna">Moderna (Poppins + Inter)</option>
+          <option value="elegante">Elegante (Playfair + Source Sans)</option>
+          <option value="amigable">Amigable (Quicksand + Nunito)</option>
+        </select>
+      </div>
       <button class="btn" onclick="guardarTema()">Guardar apariencia</button>
     </div>
     <div class="card">
@@ -426,6 +456,7 @@ tr:last-child td{border-bottom:none;}
       <h2>🌐 Datos del flyer público</h2>
       <p class="small-note">Esto es lo que ven los acampantes en la pantalla de inscripción (index.html).</p>
       <div class="grid">
+        <div class="field"><label>Nombre del campamento (título del Resumen)</label><input type="text" id="cfg-nombre-camp"></div>
         <div class="field"><label>Fecha del campamento</label><input type="text" id="cfg-fecha-camp"></div>
         <div class="field"><label>Lugar</label><input type="text" id="cfg-lugar-camp"></div>
         <div class="field"><label>Organiza</label><input type="text" id="cfg-organiza"></div>
@@ -1147,9 +1178,23 @@ function aplicarTema(nombre){
   root.setProperty('--cream', t.cream);
   document.getElementById('cfg-tema').value = nombre;
 }
+const FUENTES = {
+  clasica:  { heading: "'Fraunces', serif", body: "'Work Sans', sans-serif" },
+  moderna:  { heading: "'Poppins', sans-serif", body: "'Inter', sans-serif" },
+  elegante: { heading: "'Playfair Display', serif", body: "'Source Sans 3', sans-serif" },
+  amigable: { heading: "'Quicksand', sans-serif", body: "'Nunito', sans-serif" }
+};
+function aplicarFuente(nombre){
+  const f = FUENTES[nombre] || FUENTES.clasica;
+  const root = document.documentElement.style;
+  root.setProperty('--font-heading', f.heading);
+  root.setProperty('--font-body', f.body);
+  document.getElementById('cfg-fuente').value = nombre;
+}
 async function guardarTema(){
-  const val = document.getElementById('cfg-tema').value;
-  await apiPost('updateConfig', { data: { temaColor: val } });
+  const temaColor = document.getElementById('cfg-tema').value;
+  const fuenteTexto = document.getElementById('cfg-fuente').value;
+  await apiPost('updateConfig', { data: { temaColor, fuenteTexto } });
   alert('Apariencia guardada para todos los administradores');
 }
 
@@ -1194,6 +1239,7 @@ async function guardarValoresEstandar(){
 }
 async function guardarFlyer(){
   const data = {
+    nombreCampamento: document.getElementById('cfg-nombre-camp').value.trim(),
     fechaCampamento: document.getElementById('cfg-fecha-camp').value.trim(),
     lugarCampamento: document.getElementById('cfg-lugar-camp').value.trim(),
     organiza: document.getElementById('cfg-organiza').value.trim(),
@@ -1242,32 +1288,76 @@ function calcularSaldos(){
   return {caja, banco};
 }
 function renderResumen(){
-  document.getElementById('resumen-logo').innerHTML = logoHtml();
+  document.getElementById('resumen-logo-banner').innerHTML = DATA.config.logoBase64
+    ? `<img src="${DATA.config.logoBase64}" style="height:44px;width:44px;object-fit:contain;background:#fff;border-radius:10px;padding:4px;">`
+    : `<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;">🏕️</div>`;
+  document.getElementById('resumen-titulo').textContent = DATA.config.nombreCampamento || 'CAMPA AVIVADOS 2027';
+  const hoy = new Date().toLocaleDateString('es-PY', { day:'2-digit', month:'long', year:'numeric' });
+  document.getElementById('resumen-subtitulo').textContent = `Resumen general · Generado el ${hoy}`;
+
   const totalIngresos = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.monto),0);
   const totalGastos = DATA.movimientos.filter(m=>m.tipo==='gasto').reduce((s,m)=>s+Number(m.monto),0);
+  const resultadoNeto = totalIngresos - totalGastos;
   const totalObl = DATA.personas.reduce((s,p)=>s+obligacionTotal(p),0);
   const totalPagadoObl = DATA.personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
   const porCobrar = Math.max(totalObl - totalPagadoObl, 0);
   const {caja, banco} = calcularSaldos();
+  const totalIngresoEfectivo = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.montoEfectivo||0),0);
+  const totalIngresoBanco = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.montoBanco||0),0);
 
   document.getElementById('resumen-stats').innerHTML = `
-    <div class="stat"><div class="stat-label">Inscriptos</div><div class="stat-val">${DATA.personas.length}</div></div>
     <div class="stat forest"><div class="stat-label">Total ingresos</div><div class="stat-val">${fmt(totalIngresos)}</div></div>
     <div class="stat ember"><div class="stat-label">Total gastos</div><div class="stat-val">${fmt(totalGastos)}</div></div>
+    <div class="stat ${resultadoNeto>=0?'forest':'ember'}"><div class="stat-label">Resultado neto</div><div class="stat-val">${fmt(resultadoNeto)}</div></div>
     <div class="stat amber"><div class="stat-label">Por cobrar</div><div class="stat-val">${fmt(porCobrar)}</div></div>`;
+
+  document.getElementById('resumen-ingresos-medio').innerHTML = `
+    <div class="stat"><div class="stat-label">💵 Total ingresos efectivo</div><div class="stat-val">${fmt(totalIngresoEfectivo)}</div></div>
+    <div class="stat"><div class="stat-label">🏦 Total ingresos transferencia</div><div class="stat-val">${fmt(totalIngresoBanco)}</div></div>`;
   document.getElementById('resumen-saldos').innerHTML = `
-    <div class="stat forest"><div class="stat-label">Saldo en Caja</div><div class="stat-val">${fmt(caja)}</div></div>
-    <div class="stat forest"><div class="stat-label">Saldo en Banco</div><div class="stat-val">${fmt(banco)}</div></div>
-    <div class="stat"><div class="stat-label">Saldo total</div><div class="stat-val">${fmt(caja+banco)}</div></div>`;
+    <div class="stat forest">
+      <div class="stat-label">💵 Saldo en caja (efectivo)</div>
+      <div class="stat-val">${fmt(caja)}</div>
+      <div class="small-note" style="margin-top:2px;">Ingresos ef. − Gastos ef.</div>
+    </div>
+    <div class="stat amber">
+      <div class="stat-label">🏦 Saldo en banco (transf.)</div>
+      <div class="stat-val">${fmt(banco)}</div>
+      <div class="small-note" style="margin-top:2px;">Ingresos transf. − Gastos transf.</div>
+    </div>`;
+
   const tbody = document.querySelector('#tabla-resumen-iglesias tbody');
   const iglesiasConMovimiento = DATA.iglesias.filter(ig=> DATA.personas.some(p=>p.iglesiaId===ig.id));
-  if(!iglesiasConMovimiento.length){ tbody.innerHTML = `<tr><td colspan="5"><div class="empty">Sin iglesias con inscriptos todavía.</div></td></tr>`; }
+  if(!iglesiasConMovimiento.length){ tbody.innerHTML = `<tr><td colspan="6"><div class="empty">Sin iglesias con inscriptos todavía.</div></td></tr>`; }
   else{
     tbody.innerHTML = iglesiasConMovimiento.map(ig=>{
       const personas = DATA.personas.filter(p=>p.iglesiaId===ig.id);
       const tc = personas.reduce((s,p)=>s+obligacionTotal(p),0);
       const tp = personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
-      return `<tr><td data-label="Iglesia"><span class="tag church">${ig.nombre}</span></td><td data-label="Inscriptos">${personas.length}</td><td data-label="Total obligación" class="mono">${fmt(tc)}</td><td data-label="Pagado" class="mono">${fmt(tp)}</td><td data-label="Pendiente" class="mono">${fmt(Math.max(tc-tp,0))}</td></tr>`;
+      const pendiente = Math.max(tc-tp,0);
+      const avance = tc>0 ? Math.min(Math.round((tp/tc)*100),100) : 0;
+      const barColor = avance>=100 ? 'var(--ok)' : (avance>=60 ? 'var(--amber)' : 'var(--ember)');
+      const inicial = (ig.nombre||'?').trim().charAt(0).toUpperCase();
+      return `<tr>
+        <td data-label="Iglesia">
+          <span style="display:inline-flex;align-items:center;gap:8px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:var(--forest);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${inicial}</span>
+            ${ig.nombre}
+          </span>
+        </td>
+        <td data-label="Inscriptos">${personas.length}</td>
+        <td data-label="Deuda total" class="mono">${fmt(tc)}</td>
+        <td data-label="Cobrado" class="mono amt-in">${fmt(tp)}</td>
+        <td data-label="Pendiente" class="mono ${pendiente>0?'amt-out':''}">${fmt(pendiente)}</td>
+        <td data-label="Avance">
+          <div style="display:flex;align-items:center;gap:8px;min-width:110px;">
+            <div style="flex:1;height:7px;background:var(--line);border-radius:6px;overflow:hidden;">
+              <div style="width:${avance}%;height:100%;background:${barColor};"></div>
+            </div>
+            <span style="font-size:12px;font-weight:700;color:var(--ink-soft);">${avance}%</span>
+          </div>
+        </td>
+      </tr>`;
     }).join('');
   }
   renderConceptos();
@@ -1328,6 +1418,7 @@ function renderAll(){
   document.getElementById('cfg-remera-staff').value = DATA.config.remeraEstandarStaff||75000;
   document.getElementById('cfg-caja-inicial').value = DATA.config.saldoInicialCaja||0;
   document.getElementById('cfg-banco-inicial').value = DATA.config.saldoInicialBanco||0;
+  document.getElementById('cfg-nombre-camp').value = DATA.config.nombreCampamento||'';
   document.getElementById('cfg-fecha-camp').value = DATA.config.fechaCampamento||'';
   document.getElementById('cfg-lugar-camp').value = DATA.config.lugarCampamento||'';
   document.getElementById('cfg-organiza').value = DATA.config.organiza||'';
@@ -1353,6 +1444,7 @@ function renderAll(){
   renderResumen();
   renderEstadoPersona();
   if(DATA.config.temaColor) aplicarTema(DATA.config.temaColor);
+  if(DATA.config.fuenteTexto) aplicarFuente(DATA.config.fuenteTexto);
 }
 
 document.getElementById('m-monto-efectivo').addEventListener('input', actualizarPreviewTotal);
