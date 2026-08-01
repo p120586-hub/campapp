@@ -180,6 +180,7 @@ tr:last-child td{border-bottom:none;}
   <button class="tab-btn" data-tab="estado">Estado por persona</button>
   <button class="tab-btn" data-tab="iglesias">Iglesias</button>
   <button class="tab-btn" data-tab="cajabanco">Caja ↔ Banco</button>
+  <button class="tab-btn" data-tab="remeras">Remeras</button>
   <button class="tab-btn" data-tab="config">Configuración</button>
 </div>
 
@@ -187,14 +188,18 @@ tr:last-child td{border-bottom:none;}
 
   <div class="panel active" id="panel-resumen">
     <div class="card" id="resumen-banner" style="padding:0;overflow:hidden;">
-      <div style="background:linear-gradient(120deg,var(--forest),var(--forest-dk));color:#fff;padding:20px 22px;display:flex;align-items:center;gap:14px;">
+      <div style="background:linear-gradient(120deg,var(--forest),var(--forest-dk));color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;">
         <div id="resumen-logo-banner" style="flex-shrink:0;"></div>
-        <div>
-          <h1 id="resumen-titulo" style="color:#fff;font-size:22px;">CAMPA AVIVADOS 2027</h1>
-          <p id="resumen-subtitulo" style="margin:2px 0 0;font-size:12.5px;color:#D9E4DB;"></p>
+        <div style="flex:1;">
+          <h1 id="resumen-titulo" style="color:#fff;font-size:16px;">CAMPA AVIVADOS 2027</h1>
+          <p id="resumen-subtitulo" style="margin:1px 0 0;font-size:11px;color:#D9E4DB;"></p>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--amber);font-weight:700;">Inscriptos</div>
+          <div id="resumen-count-inscriptos" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);line-height:1;">0</div>
         </div>
       </div>
-      <div style="display:flex;height:5px;">
+      <div style="display:flex;height:4px;">
         <div style="flex:1;background:var(--forest);"></div>
         <div style="flex:1;background:var(--amber);"></div>
         <div style="flex:1;background:var(--ember);"></div>
@@ -391,6 +396,20 @@ tr:last-child td{border-bottom:none;}
     </div>
   </div>
 
+  <div class="panel" id="panel-remeras">
+    <div class="card">
+      <h2>👕 Listado de remeras</h2>
+      <p class="small-note" style="margin-top:0;">"Pagado" se marca solo cuando registrás un movimiento de ingreso con el concepto "Remera" por el monto completo. "Entregado" lo marcás vos manualmente cuando la das.</p>
+      <div class="field" style="max-width:280px;"><input type="text" id="buscar-remera" placeholder="Buscar por nombre o iglesia..." oninput="renderRemeras()"></div>
+      <div class="table-scroll">
+        <table id="tabla-remeras">
+          <thead><tr><th>Nombre</th><th>Tipo</th><th>Talla</th><th>Precio</th><th>Iglesia</th><th>Pagado</th><th>Entregado</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div class="panel" id="panel-config">
     <div class="card">
       <h2>🎨 Apariencia</h2>
@@ -542,6 +561,12 @@ function obligacionTotal(p){
   return total > 0 ? total : 0;
 }
 function esRemera(p){ return p.quiereRemera===true || p.quiereRemera==='true'; }
+function esEntregado(p){ return p.entregadoRemera===true || p.entregadoRemera==='true'; }
+function pagadoRemera(p){
+  return DATA.movimientos
+    .filter(m=> m.tipo==='ingreso' && m.personaId===p.id && (m.item||'').toLowerCase().trim()==='remera')
+    .reduce((s,m)=> s+Number(m.monto), 0);
+}
 
 function setSyncStatus(msg, isErr){
   const el = document.getElementById('sync-status');
@@ -1023,6 +1048,40 @@ function renderMovimientos(){
 }
 
 /* ============ ESTADO POR PERSONA ============ */
+/* ============ REMERAS ============ */
+async function toggleEntregado(id){
+  const p = DATA.personas.find(x=>x.id===id);
+  if(!p) return;
+  await apiPost('updatePersona', { id, data: { entregadoRemera: !esEntregado(p) } });
+}
+function renderRemeras(){
+  const q = (document.getElementById('buscar-remera')?.value||'').toLowerCase();
+  const tbody = document.querySelector('#tabla-remeras tbody');
+  if(!tbody) return;
+  const filtradas = DATA.personas.filter(p=>{
+    if(!esRemera(p)) return false;
+    const ig = iglesiaNombre(p.iglesiaId).toLowerCase();
+    return p.nombre.toLowerCase().includes(q) || ig.includes(q);
+  });
+  if(!filtradas.length){ tbody.innerHTML = `<tr><td colspan="7"><div class="empty">Nadie pidió remera todavía (o no coincide con la búsqueda).</div></td></tr>`; return; }
+  tbody.innerHTML = filtradas.map(p=>{
+    const pagado = pagadoRemera(p) >= Number(p.costoRemera||0) && Number(p.costoRemera||0) > 0;
+    const entregado = esEntregado(p);
+    const tipoTag = p.tipo==='staff' ? '<span class="tag church">Staff</span>' : '<span class="tag ok">Acampante</span>';
+    return `<tr>
+      <td data-label="Nombre"><b>${p.nombre}</b></td>
+      <td data-label="Tipo">${tipoTag}</td>
+      <td data-label="Talla">${p.tallaRemera||'—'}</td>
+      <td data-label="Precio" class="mono">${fmt(p.costoRemera)}</td>
+      <td data-label="Iglesia">${iglesiaNombre(p.iglesiaId)}</td>
+      <td data-label="Pagado">${pagado? '<span class="tag ok">Sí</span>' : '<span class="tag pending">No</span>'}</td>
+      <td data-label="Entregado">
+        <button class="btn sm ${entregado?'amber':'ghost'}" onclick="toggleEntregado('${p.id}')">${entregado? '✅ Sí' : '⬜ No'}</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
 function renderEstadoPersona(){
   const id = document.getElementById('e-persona').value;
   const detalle = document.getElementById('estado-persona-detalle');
@@ -1294,6 +1353,7 @@ function renderResumen(){
   document.getElementById('resumen-titulo').textContent = DATA.config.nombreCampamento || 'CAMPA AVIVADOS 2027';
   const hoy = new Date().toLocaleDateString('es-PY', { day:'2-digit', month:'long', year:'numeric' });
   document.getElementById('resumen-subtitulo').textContent = `Resumen general · Generado el ${hoy}`;
+  document.getElementById('resumen-count-inscriptos').textContent = DATA.personas.length;
 
   const totalIngresos = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.monto),0);
   const totalGastos = DATA.movimientos.filter(m=>m.tipo==='gasto').reduce((s,m)=>s+Number(m.monto),0);
@@ -1386,7 +1446,7 @@ function renderConceptos(){
 function exportarImagen(elementId, titulo){
   const el = document.getElementById(elementId);
   if(!el){ alert('No se encontró la sección a exportar'); return; }
-  html2canvas(el, {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
+  html2canvas(el, {scale:2, backgroundColor:'#ffffff', windowWidth:1100, width: el.scrollWidth}).then(canvas=>{
     const link = document.createElement('a');
     link.download = titulo.replace(/\s+/g,'_') + '.jpg';
     link.href = canvas.toDataURL('image/jpeg', 0.92);
@@ -1398,7 +1458,7 @@ function exportarImagen(elementId, titulo){
 function exportarPDF(elementId, titulo){
   const el = document.getElementById(elementId);
   if(!el){ alert('No se encontró la sección a exportar'); return; }
-  html2canvas(el, {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
+  html2canvas(el, {scale:2, backgroundColor:'#ffffff', windowWidth:1100, width: el.scrollWidth}).then(canvas=>{
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','pt','a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -1436,6 +1496,7 @@ function renderAll(){
   renderSelectPersonas();
   renderSelectItemsMov();
   renderInscripciones();
+  renderRemeras();
   renderMovimientos();
   renderReporteIglesias();
   renderEstadoIglesia();

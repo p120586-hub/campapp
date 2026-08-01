@@ -93,6 +93,11 @@ input:focus,select:focus{outline:2px solid var(--amber);outline-offset:1px;borde
       <div class="fval">Gs. 260.000</div>
       <div class="cost-note" id="fy-costo-nota">Desde el 1 de enero: Gs. 290.000 · A partir de febrero: Gs. 300.000</div>
     </div>
+    <div class="fstat wide">
+      <div class="flabel">Remera (opcional)</div>
+      <div class="fval" id="fy-costo-remera" style="font-size:18px;">Gs. 85.000</div>
+      <div class="cost-note">Precio para acampantes.</div>
+    </div>
   </div>
 
   <div class="limited">¡Cupos limitados!</div>
@@ -138,6 +143,7 @@ input:focus,select:focus{outline:2px solid var(--amber);outline-offset:1px;borde
   <div class="card success" id="success-card">
     <div class="check">✅</div>
     <h2>¡Listo, <span id="success-nombre"></span>!</h2>
+    <p id="success-inversion" style="font-weight:700;color:var(--deep);"></p>
     <p>Tu inscripción a Avivados Camp 2027 fue registrada. Cualquier consulta sobre el pago o el campamento, escribinos por Instagram.</p>
   </div>
 </div>
@@ -212,7 +218,9 @@ function aplicarConfigFlyer(){
   }
   if(CONFIG.organiza) document.getElementById('fy-organiza').textContent = 'Organiza ' + CONFIG.organiza;
   if(CONFIG.instagramLink) document.getElementById('ig-link').href = CONFIG.instagramLink;
+  if(CONFIG.remeraEstandar) document.getElementById('fy-costo-remera').textContent = fmt(CONFIG.remeraEstandar);
 }
+function fmt(n){ n = Number(n)||0; return "Gs. " + n.toLocaleString('es-PY',{maximumFractionDigits:0}); }
 
 async function apiPost(action, payload){
   const res = await fetch(API_URL, {
@@ -267,6 +275,12 @@ async function enviarInscripcion(){
     await apiPost('addPersona', { data });
 
     document.getElementById('success-nombre').textContent = nombre;
+    const cuotaCampamentoVal = CONFIG.cuotaEstandar || 260000;
+    const mensajeInversion = quiereRemera
+      ? `Total inversión: ${fmt(cuotaCampamentoVal)} campa + ${fmt(costoRemera)} remera`
+      : `Total inversión: ${fmt(cuotaCampamentoVal)} campa`;
+    document.getElementById('success-inversion').textContent = mensajeInversion;
+    alert(`Gracias por inscribirte al campa, ${mensajeInversion}`);
     document.getElementById('form-card').style.display = 'none';
     document.getElementById('success-card').style.display = 'block';
   }catch(e){
