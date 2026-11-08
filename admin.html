@@ -179,6 +179,7 @@ tr:last-child td{border-bottom:none;}
   <button class="tab-btn" data-tab="movimientos">Movimientos</button>
   <button class="tab-btn" data-tab="estado">Estado por persona</button>
   <button class="tab-btn" data-tab="iglesias">Iglesias</button>
+  <button class="tab-btn" data-tab="subactividades">Subactividades</button>
   <button class="tab-btn" data-tab="cajabanco">Caja ↔ Banco</button>
   <button class="tab-btn" data-tab="remeras">Remeras</button>
   <button class="tab-btn" data-tab="config">Configuración</button>
@@ -210,20 +211,7 @@ tr:last-child td{border-bottom:none;}
 
     <div class="card">
       <h2>📊 Ingresos y gastos por concepto</h2>
-      <div class="two-col">
-        <div>
-          <p class="small-note" style="margin-top:0;font-weight:700;color:var(--ok);">Ingresos</p>
-          <div class="table-scroll">
-            <table id="tabla-concepto-ingresos"><thead><tr><th>Concepto</th><th>Total</th></tr></thead><tbody></tbody></table>
-          </div>
-        </div>
-        <div>
-          <p class="small-note" style="margin-top:0;font-weight:700;color:var(--ember);">Gastos</p>
-          <div class="table-scroll">
-            <table id="tabla-concepto-gastos"><thead><tr><th>Concepto</th><th>Total</th></tr></thead><tbody></tbody></table>
-          </div>
-        </div>
-      </div>
+      <div id="estado-resultados-main"></div>
     </div>
 
     <div class="card">
@@ -365,6 +353,67 @@ tr:last-child td{border-bottom:none;}
     <div class="card">
       <h2>⛪ Vista general de todas las iglesias</h2>
       <div id="lista-iglesias-detalle"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-subactividades">
+    <div class="card">
+      <h2>🎯 Subactividades (recaudación de fondos)</h2>
+      <p class="small-note" style="margin-top:0;">Cada subactividad (torneo, almuerzo, etc.) lleva sus propios ingresos y gastos. Al campamento solo pasa la <b>ganancia neta</b> con el nombre de la subactividad, respetando efectivo y banco.</p>
+      <div class="grid">
+        <div class="field"><label>Nombre de la subactividad</label><input type="text" id="sub-nombre" placeholder="Ej: Torneo de vóley"></div>
+        <div class="field"><label>Descripción (opcional)</label><input type="text" id="sub-desc" placeholder="Ej: Cancha del club, 20/11"></div>
+      </div>
+      <button class="btn" onclick="agregarSubactividad()">Crear subactividad</button>
+    </div>
+    <div class="card">
+      <h2>📋 Mis subactividades</h2>
+      <div id="sub-lista"></div>
+    </div>
+    <div id="sub-detalle" style="display:none;">
+      <div class="card" id="sub-export-area">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+          <div>
+            <h2 id="sub-det-titulo" style="margin-bottom:2px;"></h2>
+            <p class="small-note" id="sub-det-desc" style="margin:0;"></p>
+          </div>
+          <div>
+            <button class="btn ghost sm" id="sub-btn-editar">✏️ Editar</button>
+            <button class="btn danger" id="sub-btn-eliminar">Eliminar</button>
+          </div>
+        </div>
+        <div class="stats" id="sub-stats" style="margin-top:12px;"></div>
+        <div id="estado-resultados-sub" style="margin-top:12px;"></div>
+      </div>
+      <div class="card">
+        <h2>➕ Nuevo movimiento de la subactividad</h2>
+        <div class="pill-toggle" id="sub-tipo-toggle">
+          <button type="button" class="active" data-tipo="ingreso" onclick="setTipoSubMov('ingreso')">Ingreso</button>
+          <button type="button" data-tipo="gasto" onclick="setTipoSubMov('gasto')">Gasto</button>
+        </div>
+        <div class="grid">
+          <div class="field"><label>Fecha</label><input type="date" id="sm-fecha"></div>
+          <div class="field"><label>Concepto (escribí uno nuevo o elegí uno anterior)</label><input type="text" id="sm-item" list="sm-items-list" placeholder="Ej: Inscripción de equipos, Premios..."><datalist id="sm-items-list"></datalist></div>
+        </div>
+        <div class="field"><label>Descripción (opcional)</label><input type="text" id="sm-desc"></div>
+        <label style="margin:14px 0 6px;">Monto — se puede dividir entre efectivo y banco</label>
+        <div class="split-row">
+          <div class="field"><label>Efectivo (Gs.)</label><input type="number" id="sm-efectivo" step="1000" value="0"></div>
+          <div class="field"><label>Banco (Gs.)</label><input type="number" id="sm-banco" step="1000" value="0"></div>
+        </div>
+        <div class="split-total">Total: <b class="mono" id="sm-total-preview">Gs. 0</b></div>
+        <button class="btn" onclick="agregarMovSub()">Registrar movimiento</button>
+        <div id="sm-err" style="display:none;color:var(--ember);font-size:13px;margin-top:8px;"></div>
+      </div>
+      <div class="card">
+        <h2>📑 Movimientos de la subactividad</h2>
+        <div class="table-scroll">
+          <table id="sub-tabla-mov">
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Efectivo</th><th>Banco</th><th>Total</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -551,7 +600,7 @@ if(sessionStorage.getItem('campapp_admin_ok') === '1'){
 }
 
 /* ============ DATA (en memoria, sincronizada con Sheets) ============ */
-let DATA = { personas:[], iglesias:[], movimientos:[], transferencias:[], config:{} };
+let DATA = { personas:[], iglesias:[], movimientos:[], transferencias:[], subactividades:[], movSub:[], config:{} };
 
 function fmt(n){ n = Number(n)||0; return "Gs. " + n.toLocaleString('es-PY',{maximumFractionDigits:0}); }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -588,6 +637,8 @@ async function sincronizar(showVeil){
     const data = await res.json();
     if(data.error) throw new Error(data.error);
     DATA = data;
+    DATA.subactividades = DATA.subactividades || [];
+    DATA.movSub = DATA.movSub || [];
     renderAll();
     setSyncStatus('Sincronizado ✓');
   }catch(e){
@@ -680,6 +731,26 @@ function abrirEdicion(tipo, id){
         <div class="field"><label>Banco (Gs.)</label><input type="number" id="edit-mov-banco" value="${m.montoBanco||0}"></div>
       </div>
       <div class="field"><label>Descripción</label><input type="text" id="edit-mov-desc" value="${escAttr(m.desc)}"></div>`;
+  } else if(tipo==='subactividad'){
+    const sa = DATA.subactividades.find(x=>x.id===id); if(!sa) return;
+    titulo = 'Editar subactividad';
+    html = `
+      <div class="field"><label>Nombre</label><input type="text" id="edit-sub-nombre" value="${escAttr(sa.nombre)}"></div>
+      <div class="field"><label>Descripción</label><input type="text" id="edit-sub-desc" value="${escAttr(sa.descripcion)}"></div>`;
+  } else if(tipo==='movsub'){
+    const m = DATA.movSub.find(x=>x.id===id); if(!m) return;
+    titulo = 'Editar movimiento de subactividad';
+    html = `
+      <div class="two-col">
+        <div class="field"><label>Tipo</label><select id="edit-ms-tipo"><option value="ingreso" ${m.tipo==='ingreso'?'selected':''}>📥 Ingreso</option><option value="gasto" ${m.tipo==='gasto'?'selected':''}>📤 Gasto</option></select></div>
+        <div class="field"><label>Fecha</label><input type="date" id="edit-ms-fecha" value="${m.fecha}"></div>
+      </div>
+      <div class="field"><label>Concepto</label><input type="text" id="edit-ms-item" list="sm-items-list" value="${escAttr(m.item)}"></div>
+      <div class="two-col">
+        <div class="field"><label>Efectivo (Gs.)</label><input type="number" id="edit-ms-efectivo" value="${m.montoEfectivo||0}"></div>
+        <div class="field"><label>Banco (Gs.)</label><input type="number" id="edit-ms-banco" value="${m.montoBanco||0}"></div>
+      </div>
+      <div class="field"><label>Descripción</label><input type="text" id="edit-ms-desc" value="${escAttr(m.desc)}"></div>`;
   } else if(tipo==='transferencia'){
     const t = DATA.transferencias.find(x=>x.id===id); if(!t) return;
     titulo = 'Editar transferencia';
@@ -735,6 +806,24 @@ async function guardarEdicionModal(){
       desc: document.getElementById('edit-mov-desc').value.trim()
     };
     await apiPost('updateMovimiento', { id, data });
+  } else if(tipo==='subactividad'){
+    const nombre = document.getElementById('edit-sub-nombre').value.trim();
+    if(!nombre){ alert('El nombre no puede quedar vacío'); return; }
+    data = { nombre, descripcion: document.getElementById('edit-sub-desc').value.trim() };
+    await apiPost('updateSubactividad', { id, data });
+  } else if(tipo==='movsub'){
+    const item = document.getElementById('edit-ms-item').value.trim();
+    if(!item){ alert('Ingresá el concepto'); return; }
+    const ef = Number(document.getElementById('edit-ms-efectivo').value)||0;
+    const ba = Number(document.getElementById('edit-ms-banco').value)||0;
+    if(ef+ba<=0){ alert('El monto total debe ser mayor a 0'); return; }
+    data = {
+      tipo: document.getElementById('edit-ms-tipo').value,
+      fecha: document.getElementById('edit-ms-fecha').value,
+      item, montoEfectivo: ef, montoBanco: ba, monto: ef+ba,
+      desc: document.getElementById('edit-ms-desc').value.trim()
+    };
+    await apiPost('updateMovSub', { id, data });
   } else if(tipo==='transferencia'){
     data = {
       fecha: document.getElementById('edit-t-fecha').value,
@@ -1331,6 +1420,120 @@ function renderItems(){
   document.getElementById('lista-items-gasto').innerHTML = (DATA.config.itemsGasto||[]).map(it=>itemRow(it,'gasto')).join('') || '<div class="empty">Sin items.</div>';
 }
 
+/* ============ SUBACTIVIDADES ============ */
+let subSel = null;
+let tipoSubMov = 'ingreso';
+function movsDeSub(id){ return (DATA.movSub||[]).filter(m=>m.subId===id); }
+function totalesSub(id){
+  const ms = movsDeSub(id);
+  const sum = (tipo,campo)=> ms.filter(m=>m.tipo===tipo).reduce((s,m)=>s+Number(m[campo]||0),0);
+  const ingEf = sum('ingreso','montoEfectivo'), ingBa = sum('ingreso','montoBanco');
+  const gaEf = sum('gasto','montoEfectivo'), gaBa = sum('gasto','montoBanco');
+  const ing = ingEf+ingBa, ga = gaEf+gaBa;
+  return { ing, ga, ef: ingEf-gaEf, ba: ingBa-gaBa, neto: ing-ga, n: ms.length };
+}
+async function agregarSubactividad(){
+  const nombre = document.getElementById('sub-nombre').value.trim();
+  if(!nombre){ alert('Ingresá el nombre de la subactividad'); return; }
+  const descripcion = document.getElementById('sub-desc').value.trim();
+  const res = await apiPost('addSubactividad', { data: { nombre, descripcion } });
+  document.getElementById('sub-nombre').value=''; document.getElementById('sub-desc').value='';
+  if(res && res.id){ subSel = res.id; renderSubactividades(); }
+}
+function seleccionarSub(id){ subSel = id; renderSubactividades(); document.getElementById('sub-detalle').scrollIntoView({behavior:'smooth'}); }
+async function eliminarSubactividad(id){
+  const sa = DATA.subactividades.find(x=>x.id===id); if(!sa) return;
+  const n = movsDeSub(id).length;
+  if(!confirm(`¿Eliminar la subactividad "${sa.nombre}"${n? ' y sus '+n+' movimientos':''}? Su ganancia neta dejará de aparecer en el campamento. Esta acción no se puede deshacer.`)) return;
+  await apiPost('deleteSubactividad', { id });
+  if(subSel===id) subSel = null;
+  renderSubactividades();
+}
+function setTipoSubMov(t){
+  tipoSubMov = t;
+  document.querySelectorAll('#sub-tipo-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.tipo===t));
+}
+function actualizarPreviewSub(){
+  const ef = Number(document.getElementById('sm-efectivo').value)||0;
+  const ba = Number(document.getElementById('sm-banco').value)||0;
+  document.getElementById('sm-total-preview').textContent = fmt(ef+ba);
+}
+async function agregarMovSub(){
+  const err = document.getElementById('sm-err'); err.style.display='none';
+  if(!subSel){ err.textContent='Elegí primero una subactividad.'; err.style.display='block'; return; }
+  const item = document.getElementById('sm-item').value.trim();
+  const ef = Number(document.getElementById('sm-efectivo').value)||0;
+  const ba = Number(document.getElementById('sm-banco').value)||0;
+  if(!item){ err.textContent='Ingresá el concepto.'; err.style.display='block'; return; }
+  if(ef<0 || ba<0 || ef+ba<=0){ err.textContent='El monto total debe ser mayor a 0.'; err.style.display='block'; return; }
+  await apiPost('addMovSub', { data: {
+    subId: subSel, fecha: document.getElementById('sm-fecha').value || todayStr(),
+    tipo: tipoSubMov, item, montoEfectivo: ef, montoBanco: ba, monto: ef+ba,
+    desc: document.getElementById('sm-desc').value.trim()
+  }});
+  document.getElementById('sm-item').value=''; document.getElementById('sm-desc').value='';
+  document.getElementById('sm-efectivo').value=0; document.getElementById('sm-banco').value=0;
+  actualizarPreviewSub();
+}
+async function eliminarMovSub(id){
+  if(!confirm('¿Eliminar este movimiento de la subactividad?')) return;
+  await apiPost('deleteMovSub', { id });
+}
+function renderSubactividades(){
+  const subs = DATA.subactividades||[];
+  if(subSel && !subs.some(s=>s.id===subSel)) subSel = null;
+  const lista = document.getElementById('sub-lista');
+  lista.innerHTML = subs.length ? `<div class="stats">` + subs.map(sa=>{
+    const t = totalesSub(sa.id);
+    return `<div class="stat ${t.neto>=0?'forest':'ember'}" style="cursor:pointer;${sa.id===subSel?'outline:2px solid var(--amber);':''}" onclick="seleccionarSub('${sa.id}')">
+      <div class="stat-label">${sa.nombre}</div>
+      <div class="stat-val">${fmt(t.neto)}</div>
+      <div class="small-note" style="margin:2px 0 0;">Ganancia neta · ${t.n} mov.</div>
+    </div>`;
+  }).join('') + `</div>` : '<div class="empty">Todavía no creaste ninguna subactividad.</div>';
+
+  const det = document.getElementById('sub-detalle');
+  if(!subSel){ det.style.display='none'; return; }
+  det.style.display='block';
+  const sa = subs.find(s=>s.id===subSel);
+  const t = totalesSub(sa.id);
+  document.getElementById('sub-det-titulo').textContent = '🎯 ' + sa.nombre;
+  document.getElementById('sub-det-desc').textContent = sa.descripcion || '';
+  document.getElementById('sub-btn-editar').onclick = ()=>abrirEdicion('subactividad', sa.id);
+  document.getElementById('sub-btn-eliminar').onclick = ()=>eliminarSubactividad(sa.id);
+  document.getElementById('sub-stats').innerHTML = `
+    <div class="stat forest"><div class="stat-label">Ingresos</div><div class="stat-val">${fmt(t.ing)}</div></div>
+    <div class="stat ember"><div class="stat-label">Gastos</div><div class="stat-val">${fmt(t.ga)}</div></div>
+    <div class="stat ${t.neto>=0?'forest':'ember'}"><div class="stat-label">Ganancia neta</div><div class="stat-val">${fmt(t.neto)}</div></div>
+    <div class="stat"><div class="stat-label">💵 Neto efectivo</div><div class="stat-val">${fmt(t.ef)}</div></div>
+    <div class="stat amber"><div class="stat-label">🏦 Neto banco</div><div class="stat-val">${fmt(t.ba)}</div></div>`;
+
+  const ms = movsDeSub(sa.id);
+  const conc = tipo=>{
+    const map={}; ms.filter(m=>m.tipo===tipo).forEach(m=>{ map[m.item]=(map[m.item]||0)+Number(m.monto); });
+    return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  };
+  document.getElementById('estado-resultados-sub').innerHTML = estadoResultadosHTML(conc('ingreso'), conc('gasto'));
+
+  const items = [...new Set(ms.map(m=>m.item))];
+  document.getElementById('sm-items-list').innerHTML = items.map(i=>`<option value="${escAttr(i)}">`).join('');
+  if(!document.getElementById('sm-fecha').value) document.getElementById('sm-fecha').value = todayStr();
+
+  const ord = [...ms].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
+  document.querySelector('#sub-tabla-mov tbody').innerHTML = ord.length ? ord.map(m=>{
+    const cls = m.tipo==='ingreso'?'amt-in':'amt-out', sg = m.tipo==='ingreso'?'+':'−';
+    return `<tr>
+      <td data-label="Fecha">${m.fecha}</td>
+      <td data-label="Tipo">${m.tipo==='ingreso'?'📥 Ingreso':'📤 Gasto'}</td>
+      <td data-label="Concepto">${m.item}${m.desc?' · <span class="small-note" style="margin:0;">'+m.desc+'</span>':''}</td>
+      <td data-label="Efectivo" class="mono">${Number(m.montoEfectivo)?fmt(m.montoEfectivo):'—'}</td>
+      <td data-label="Banco" class="mono">${Number(m.montoBanco)?fmt(m.montoBanco):'—'}</td>
+      <td data-label="Total" class="mono ${cls}">${sg} ${fmt(m.monto)}</td>
+      <td data-label=""><button class="btn ghost sm" onclick="abrirEdicion('movsub','${m.id}')">✏️ Editar</button> <button class="btn danger" onclick="eliminarMovSub('${m.id}')">Eliminar</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7"><div class="empty">Sin movimientos todavía.</div></td></tr>`;
+}
+
 /* ============ RESUMEN GENERAL ============ */
 function calcularSaldos(){
   let caja = Number(DATA.config.saldoInicialCaja)||0;
@@ -1339,6 +1542,10 @@ function calcularSaldos(){
     const signo = m.tipo==='ingreso' ? 1 : -1;
     caja += signo*Number(m.montoEfectivo||0);
     banco += signo*Number(m.montoBanco||0);
+  });
+  (DATA.subactividades||[]).forEach(sa=>{
+    const t = totalesSub(sa.id);
+    caja += t.ef; banco += t.ba;
   });
   DATA.transferencias.forEach(t=>{
     if(t.tipo==='caja->banco'){ caja -= Number(t.monto); banco += Number(t.monto); }
@@ -1355,15 +1562,18 @@ function renderResumen(){
   document.getElementById('resumen-subtitulo').textContent = `Resumen general · Generado el ${hoy}`;
   document.getElementById('resumen-count-inscriptos').textContent = DATA.personas.length;
 
-  const totalIngresos = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.monto),0);
-  const totalGastos = DATA.movimientos.filter(m=>m.tipo==='gasto').reduce((s,m)=>s+Number(m.monto),0);
+  const subsT = (DATA.subactividades||[]).map(sa=>totalesSub(sa.id)).filter(t=>t.n>0);
+  const subIng = subsT.filter(t=>t.neto>=0).reduce((s,t)=>s+t.neto,0);
+  const subGa = subsT.filter(t=>t.neto<0).reduce((s,t)=>s-t.neto,0);
+  const totalIngresos = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.monto),0) + subIng;
+  const totalGastos = DATA.movimientos.filter(m=>m.tipo==='gasto').reduce((s,m)=>s+Number(m.monto),0) + subGa;
   const totalObl = DATA.personas.reduce((s,p)=>s+obligacionTotal(p),0);
   const totalPagadoObl = DATA.personas.reduce((s,p)=>s+pagadoPorPersona(p.id),0);
   const porCobrar = Math.max(totalObl - totalPagadoObl, 0);
   const {caja, banco} = calcularSaldos();
   const resultadoNeto = caja + banco;
-  const totalIngresoEfectivo = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.montoEfectivo||0),0);
-  const totalIngresoBanco = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.montoBanco||0),0);
+  const totalIngresoEfectivo = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.montoEfectivo||0),0) + subsT.reduce((s,t)=>s+Math.max(t.ef,0),0);
+  const totalIngresoBanco = DATA.movimientos.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+Number(m.montoBanco||0),0) + subsT.reduce((s,t)=>s+Math.max(t.ba,0),0);
 
   document.getElementById('resumen-stats').innerHTML = `
     <div class="stat forest"><div class="stat-label">Total ingresos</div><div class="stat-val">${fmt(totalIngresos)}</div></div>
@@ -1422,6 +1632,40 @@ function renderResumen(){
   }
   renderConceptos();
 }
+/* Estado de resultados: Ingresos / rubros / Gastos / rubros / Resultado */
+function estadoResultadosHTML(ingresos, gastos){
+  const num = v => fmt(v).replace('Gs. ','');
+  const tI = ingresos.reduce((s,x)=>s+x[1],0), tG = gastos.reduce((s,x)=>s+x[1],0);
+  const res = tI - tG;
+  const pctDe = (v,t)=> t>0 ? Math.round(v/t*100) : 0;
+  const seccion = (titulo, emoji, total, arr, color, vacio)=>`
+    <div style="margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#fff;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:${color};color:#fff;">
+        <span style="font-weight:700;font-size:14px;letter-spacing:.03em;">${emoji} ${titulo}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;">${num(total)}</span>
+      </div>
+      ${arr.length ? arr.map(([it,v],idx)=>`
+        <div style="padding:9px 14px;${idx<arr.length-1?'border-bottom:1px solid var(--line);':''}">
+          <div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;">
+            <span>${it}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:${color};">${num(v)}</span>
+          </div>
+          <div style="height:4px;background:var(--line);border-radius:4px;margin-top:6px;overflow:hidden;">
+            <div style="width:${pctDe(v,total)}%;height:100%;background:${color};opacity:.55;"></div>
+          </div>
+        </div>`).join('') : `<div style="padding:12px 14px;font-size:13px;color:var(--ink-soft);">${vacio}</div>`}
+    </div>`;
+  const colRes = res>=0 ? 'var(--forest)' : 'var(--ember)';
+  return `<div style="max-width:560px;margin:0 auto;">
+    ${seccion('INGRESOS','📥',tI,ingresos,'var(--forest)','Sin ingresos todavía.')}
+    ${seccion('GASTOS','📤',tG,gastos,'var(--ember)','Sin gastos todavía.')}
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-radius:12px;border:2px solid ${colRes};background:${res>=0?'#E3EFE5':'#F8E1DA'};">
+      <span style="font-weight:700;font-size:14px;letter-spacing:.03em;color:${colRes};">RESULTADO / SALDO</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:${colRes};">${num(res)}</span>
+    </div>
+  </div>`;
+}
+
 function renderConceptos(){
   const porConcepto = (tipoMov)=>{
     const map = {};
@@ -1432,14 +1676,14 @@ function renderConceptos(){
   };
   const ingresos = porConcepto('ingreso');
   const gastos = porConcepto('gasto');
-  const tbodyIn = document.querySelector('#tabla-concepto-ingresos tbody');
-  const tbodyGa = document.querySelector('#tabla-concepto-gastos tbody');
-  tbodyIn.innerHTML = ingresos.length
-    ? ingresos.map(([item,total])=>`<tr><td data-label="Concepto">${item}</td><td data-label="Total" class="mono amt-in">${fmt(total)}</td></tr>`).join('')
-    : '<tr><td colspan="2"><div class="empty">Sin ingresos todavía.</div></td></tr>';
-  tbodyGa.innerHTML = gastos.length
-    ? gastos.map(([item,total])=>`<tr><td data-label="Concepto">${item}</td><td data-label="Total" class="mono amt-out">${fmt(total)}</td></tr>`).join('')
-    : '<tr><td colspan="2"><div class="empty">Sin gastos todavía.</div></td></tr>';
+  (DATA.subactividades||[]).forEach(sa=>{
+    const t = totalesSub(sa.id);
+    if(!t.n) return;
+    if(t.neto>=0) ingresos.push(['Ganancia neta – '+sa.nombre, t.neto]);
+    else gastos.push(['Resultado negativo – '+sa.nombre, -t.neto]);
+  });
+  ingresos.sort((a,b)=>b[1]-a[1]); gastos.sort((a,b)=>b[1]-a[1]);
+  document.getElementById('estado-resultados-main').innerHTML = estadoResultadosHTML(ingresos, gastos);
 }
 
 /* ============ EXPORTAR IMAGEN (JPG) ============ */
@@ -1503,11 +1747,14 @@ function renderAll(){
   renderTransferencias();
   renderItems();
   renderResumen();
+  renderSubactividades();
   renderEstadoPersona();
   if(DATA.config.temaColor) aplicarTema(DATA.config.temaColor);
   if(DATA.config.fuenteTexto) aplicarFuente(DATA.config.fuenteTexto);
 }
 
+document.getElementById('sm-efectivo').addEventListener('input', actualizarPreviewSub);
+document.getElementById('sm-banco').addEventListener('input', actualizarPreviewSub);
 document.getElementById('m-monto-efectivo').addEventListener('input', actualizarPreviewTotal);
 document.getElementById('m-monto-banco').addEventListener('input', actualizarPreviewTotal);
 </script>
